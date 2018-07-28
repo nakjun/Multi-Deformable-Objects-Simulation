@@ -1,0 +1,51 @@
+#version 430
+
+layout( local_size_x = 1000) in;
+
+layout(std430, binding=0) buffer PosIn {
+  vec4 Position[];
+};
+
+layout(std430, binding=8) buffer FaceInfor {
+  vec4 Face[];
+};
+
+layout(std430, binding=9) buffer NormIn {
+  vec4 Normal[];
+};
+
+// Object's Vertex Count
+uniform int VertexCount;
+
+void main() {
+  uint index= gl_GlobalInvocationID.x;
+
+  vec4 Infor = Face[index];
+
+  float m1 = Infor.x;
+  float m2 = Infor.y;
+  float m3 = Infor.z;
+  
+  vec3 p1 = Position[int(m1)].xyz;
+  vec3 p2 = Position[int(m2)].xyz;
+  vec3 p3 = Position[int(m3)].xyz;
+
+  vec3 va = p2-p1;
+  vec3 vb = p3-p1;  
+  
+  vec3 nRes = normalize(cross(va,vb));
+
+  float X = -abs(normalize(nRes.x));
+  float Y = -abs(normalize(nRes.y));
+  float Z = -abs(normalize(nRes.z));
+  
+  float n1 = index*VertexCount+m1;
+  float n2 = index*VertexCount+m2;
+  float n3 = index*VertexCount+m3;
+
+  Normal[int(n1)].x = X;   Normal[int(n1)].y = Y;   Normal[int(n1)].z = Z;
+  Normal[int(n2)].x = X;   Normal[int(n2)].y = Y;	  Normal[int(n2)].z = Z;
+  Normal[int(n3)].x = X;   Normal[int(n3)].y = Y;	  Normal[int(n3)].z = Z;
+  Normal[int(n1)].w = float(index); Normal[int(n2)].w = float(index); Normal[int(n3)].w = float(index);
+}
+

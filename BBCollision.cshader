@@ -1,0 +1,77 @@
+#version 430
+// 0 : Node Position, 1 : Node Velocity, 2 : Spring Information, 3 : Node Force, 4 : BBInformation, 5 : BBResult, 6 : Normal, 7 : Face Information
+struct BoundingBox
+{
+   vec4 Min;
+   vec4 Max;   
+   vec4 data;   
+};
+
+// Target 4 : Bounding Box Information
+layout(std430, binding = 4) buffer BBInfor {
+    BoundingBox BB_INFOR1[]; 
+};
+
+//Target 5 : Bounding Box Collision Result
+layout(std430, binding =5)  buffer Res{
+	vec4 BB_RES[];
+};
+
+// Target 6 : Vertex Normal
+layout(std430, binding = 6) buffer NormalB {
+   vec4 Normal[];
+};
+
+//Target 8 : ObjectInformation
+layout(std430, binding =8)  buffer OBJECT{
+	vec4 ObjectInformation[];
+};
+
+//Target 11 : Masking Table
+layout(std430, binding =11)  buffer Mask{
+	int MaskResult[];
+};
+
+//Target 7 : Face INformation
+layout(std430, binding =7)  buffer FACE{
+	vec4 Face_Information[];
+};
+
+// Target 9 : Bounding Box Face Information
+layout(std430, binding = 9) buffer BB_Face {
+    vec4 BBFaceList[]; 
+};
+
+float check(vec3 min1,vec3 min2,vec3 max1,vec3 max2){
+	if (max1.x < min2.x || min1.x > max2.x) return 0.0;
+	if (max1.y < min2.y || min1.y > max2.y) return 0.0;
+	if (max1.z < min2.z || min1.z > max2.z) return 0.0;
+	return 1.0;
+}
+
+uniform int BBCount;
+uniform int FaceListOffset;
+uniform int FaceOffset;
+//uniform int 
+
+layout (local_size_x = 32, local_size_y = 32) in;
+
+void main()
+{	
+	uint index1= gl_GlobalInvocationID.x;
+	uint index2= gl_GlobalInvocationID.y+64;
+		
+	int offset1 = int(BB_INFOR1[index1].data.z);
+	int offset2 = int(BB_INFOR1[index2].data.z)+FaceOffset;
+	
+	int nowfaceCount1 = int(BB_INFOR1[index1].data.w);
+	int nowfaceCount2 = int(BB_INFOR1[index2].data.w);
+	
+	MaskResult[index1*64+(index2-64)] = -1;
+
+	if(nowfaceCount1==0 || nowfaceCount2==0) return;	
+
+	float res = check(BB_INFOR1[index1].Min.xyz,BB_INFOR1[index2].Min.xyz,BB_INFOR1[index1].Max.xyz,BB_INFOR1[index2].Max.xyz);		
+	
+	MaskResult[index1*64+(index2-64)] = int(res);
+}

@@ -1,0 +1,102 @@
+#version 430
+// 0 : Node Position, 1 : Node Velocity, 2 : Spring Information, 3 : Node Force, 4 : BBInformation, 5 : BBResult, 6 : Normal, 7 : Face Information
+struct BoundingBox
+{
+   vec4 Min;
+   vec4 Max;   
+   vec4 data;  
+};
+
+// Target 0 : Vertex position
+layout(std430, binding = 0) buffer Pos {
+   vec4 Positions[];
+};
+
+// Target 4 : Bounding Box Information
+layout(std430, binding = 4) buffer BBInfor {
+    BoundingBox BB_INFOR1[]; 
+};
+
+//Target 5 : Bounding Box Collision Result
+layout(std430, binding =5)  buffer Res{
+	vec4 BB_RES[];
+};
+
+//Target 7 : Face INformation
+layout(std430, binding =7)  buffer FACE{
+	vec4 Face_Information[];
+};
+
+
+//Target 8 : Object Information
+layout(std430, binding =8)  buffer OBJECT{
+	vec4 ObjectInformation[];
+};
+
+//Target 9 : Bounding Box Face Set
+layout(std430, binding =9)  buffer BBFACE{
+	vec4 BBFaceList[];
+};
+
+uniform int ObjectCount;
+uniform int FaceListOffset;
+uniform int FaceOffset;
+
+layout (local_size_x = 32) in;
+
+void main() {
+	uint index= gl_GlobalInvocationID.x;	// 1차원으로 dispatch된 BB의 index를 가져옴
+	
+	BoundingBox curBB = BB_INFOR1[index];   // 해당 인덱스의 BoundingBox Information을 가져옴
+	
+	int nowfaceCount = int(curBB.data.w);	// 현재 바운딩박스의 Face갯수를 가져옴
+	
+	if(nowfaceCount==0) return;				// Face가 없는 바운딩 박스는 쓰레드를 종료함
+
+	int nowfaceOffset = 0;					// FaceOffset을 저장할 변수 초기화
+	int nowoffset = int(curBB.data.z);		// BoundingBox의 Offset을 저장할 변수 초기화
+
+	if(curBB.data.x==1.0)					// 두번째 오브젝트일 경우 Offset을 저장함
+	{
+		nowoffset += FaceListOffset;
+		nowfaceOffset += FaceOffset;
+	}
+
+	//Bounding Box의 Min, Max Vector를 update하기위한 Temp변수
+	vec4 min = vec4(0.0);
+	vec4 max = vec4(0.0);
+	
+	int FirstIndex = int(BBFaceList[nowoffset].x) + nowfaceOffset;
+	BB_INFOR1[index].data.y = float(FirstIndex);
+	vec4 FirstFaceNodeData = Face_Information[FirstIndex];
+
+	//첫번째 페이스정보를 통한 더미데이터 생성
+	min.xyz = Positions[int(FirstFaceNodeData.x)].xyz;
+	max.xyz = Positions[int(FirstFaceNodeData.y)].xyz;
+	
+	//Offset ~ Offset+FaceCount 만큼 반복하며 Min, Max Vector를 계산함
+	int nodetempindex[3];
+	for(int i=nowoffset;i<nowoffset+nowfaceCount;i++)
+	{	
+		int nIndex = int(BBFaceList[i].x) + nowfaceOffset;
+		vec4 FaceNodeData = Face_Information[nIndex];
+			
+		nodetempindex[0] = int(FaceNodeData.x);
+		nodetempindex[1] = int(FaceNodeData.y);
+		nodetempindex[2] = int(FaceNodeData.z);
+
+		for(int j=0;j<3;j++)
+		{
+			if(min.x>Positions[nodetempindex[j]].x) min.x = Positions[nodetempindex[j]].x;
+			if(min.y>Positions[nodetempindex[j]].y) min.y = Positions[nodetempindex[j]].y;
+			if(min.z>Positions[nodetempindex[j]].z) min.z = Positions[nodetempindex[j]].z;
+
+			if(max.x<Positions[nodetempindex[j]].x) max.x = Positions[nodetempindex[j]].x;
+			if(max.y<Positions[nodetempindex[j]].y) max.y = Positions[nodetempindex[j]].y;
+			if(max.z<Positions[nodetempindex[j]].z) max.z = Positions[nodetempindex[j]].z;
+		}
+	}
+	BB_INFOR1[index].Min.xyz = min.xyz;
+	BB_INFOR1[index].Max.xyz = max.xyz;
+}
+

@@ -1,0 +1,595 @@
+#version 430
+
+layout( local_size_x = 32, local_size_y = 32) in;
+struct BoundingBox
+{
+   vec4 Min;
+   vec4 Max;   
+   vec4 data;   
+};
+
+layout(std430, binding=0) buffer PosIn {
+  vec4 PositionIn[];
+};
+
+// Target 4 : Bounding Box Information
+layout(std430, binding = 4) buffer BBInformation {
+    BoundingBox BB_INFOR1[]; 
+};
+
+// Target 6 : Vertex Normal
+layout(std430, binding = 6) buffer NormalB {
+   vec4 Normal[];
+};
+
+layout(std430, binding=7) buffer FaceInfor {
+  vec4 FaceInformation[];
+};
+
+// Target 9 : Bounding Box Face Information
+layout(std430, binding = 9) buffer BB_Face {
+    vec4 BBFaceList[]; 
+};
+
+layout(std430, binding=10) buffer Pairwise {
+  vec4 FacePairwise[];
+};
+
+//Target 11 : Masking Table
+layout(std430, binding =11)  buffer Mask{
+	int MaskResult[];
+};
+
+float orient_2D(float a[2], float b[2], float c[2]){
+   return  ((a[0]-c[0])*(b[1]-c[1])-(a[1]-c[1])*(b[0]-c[0]));
+}
+
+int Intersection_test_vertex(float P1[2], float Q1[2],float R1[2], float P2[2], float Q2[2], float R2[2]) 
+{
+   if (orient_2D(R2,P2,Q1) >= 0.0f)
+      if (orient_2D(R2,Q2,Q1) <= 0.0f)
+         if (orient_2D(P1,P2,Q1) > 0.0f) {
+            if (orient_2D(P1,Q2,Q1) <= 0.0f)
+               return 1; 
+            else return 0;
+         }
+         else {
+            if (orient_2D(P1,P2,R1) >= 0.0f)
+               if (orient_2D(Q1,R1,P2) >= 0.0f) 
+                  return 1; 
+               else 
+                  return 0;
+            else 
+               return 0;
+         }
+      else 
+         if (orient_2D(P1,Q2,Q1) <= 0.0f)
+            if (orient_2D(R2,Q2,R1) <= 0.0f)
+               if (orient_2D(Q1,R1,Q2) >= 0.0f) 
+                  return 1; 
+               else 
+                  return 0;
+            else 
+               return 0;
+         else 
+            return 0;
+   else
+      if (orient_2D(R2,P2,R1) >= 0.0f) 
+         if (orient_2D(Q1,R1,R2) >= 0.0f)
+            if (orient_2D(P1,P2,R1) >= 0.0f) 
+               return 1;
+            else return 0;
+         else 
+            if (orient_2D(Q1,R1,Q2) >= 0.0f) {
+               if (orient_2D(R2,R1,Q2) >= 0.0f)
+                  return 1; 
+               else 
+                  return 0; 
+            }
+            else
+               return 0; 
+      else 
+         return 0; 
+};
+
+int Intersection_test_edge(float P1[2], float Q1[2],float R1[2], float P2[2], float Q2[2], float R2[2]) { 
+   if (orient_2D(R2,P2,Q1) >= 0.0f) {
+      if (orient_2D(P1,P2,Q1) >= 0.0f) { 
+         if (orient_2D(P1,Q1,R2) >= 0.0f) return 1; 
+         else return 0;} else { 
+            if (orient_2D(Q1,R1,P2) >= 0.0f){ 
+               if (orient_2D(R1,P1,P2) >= 0.0f) return 1; else return 0;} 
+            else return 0; } 
+   } else {
+      if (orient_2D(R2,P2,R1) >= 0.0f) 
+      {
+         if (orient_2D(P1,P2,R1) >= 0.0f) 
+         {
+            if (orient_2D(P1,R1,R2) >= 0.0f) 
+               return 1;  
+            else 
+            {
+               if (orient_2D(Q1,R1,R2) >= 0.0f)
+                  return 1;
+               else 
+                  return 0;
+            }
+         }
+         else  return 0;
+      }
+      else 
+         return 0; 
+   }
+}
+
+
+
+int ccw_tri_tri_intersection_2d(float p1[2], float q1[2], float r1[2], float p2[2], float q2[2], float r2[2]) {
+   if ( orient_2D(p2,q2,p1) >= 0.0f )
+   {
+      if ( orient_2D(q2,r2,p1) >= 0.0f ) 
+      {
+         if ( orient_2D(r2,p2,p1) >= 0.0f ) 
+         {
+            return 1;
+         }
+         else 
+         {
+            return Intersection_test_edge(p1,q1,r1,p2,q2,r2);
+         }
+      } 
+      else {  
+         if ( orient_2D(r2,p2,p1) >= 0.0f ) 
+         {
+            return Intersection_test_edge(p1,q1,r1,r2,p2,q2);
+         }
+         else 
+         {
+            return Intersection_test_vertex(p1,q1,r1,p2,q2,r2);
+         }
+      }
+   }
+   else {
+      if ( orient_2D(q2,r2,p1) >= 0.0f ) {
+         if ( orient_2D(r2,p2,p1) >= 0.0f ) 
+         {
+            return Intersection_test_edge(p1,q1,r1,q2,r2,p2);
+         }
+         else  
+         {
+            return Intersection_test_vertex(p1,q1,r1,q2,r2,p2);
+         }
+      }
+      else 
+      {
+         return Intersection_test_vertex(p1,q1,r1,r2,p2,q2);
+      }
+   }
+};
+int tri_tri_overlap_test_2d(float p1[2], float q1[2], float r1[2], 
+                     float p2[2], float q2[2], float r2[2]) {
+   if ( orient_2D(p1,q1,r1) < 0.0f )
+      if ( orient_2D(p2,q2,r2) < 0.0f )
+         return ccw_tri_tri_intersection_2d(p1,r1,q1,p2,r2,q2);
+      else
+         return ccw_tri_tri_intersection_2d(p1,r1,q1,p2,q2,r2);
+   else
+      if ( orient_2D(p2,q2,r2) < 0.0f )
+         return ccw_tri_tri_intersection_2d(p1,q1,r1,p2,r2,q2);
+      else
+         return ccw_tri_tri_intersection_2d(p1,q1,r1,p2,q2,r2);
+
+};
+
+int coplanar_tri_tri3d(vec3 tri1[3], vec3 tri2[3], vec3 normal1,vec3 normal2)
+{
+
+   float P1[2],Q1[2],R1[2];
+   float P2[2],Q2[2],R2[2];
+
+   float n_x, n_y, n_z;
+
+   n_x = ((normal1.x<0)?-normal1[0]:normal1[0]);
+   n_y = ((normal1.y<0)?-normal1[1]:normal1[1]);
+   n_z = ((normal1.z<0)?-normal1[2]:normal1[2]);
+
+
+   /* Projection of the triangles in 3D onto 2D such that the area of
+   the projection is maximized. */
+
+
+   if (( n_x > n_z ) && ( n_x >= n_y )) {
+      // Project onto plane YZ
+
+      P1[0] = tri1[1].z; P1[1] = tri1[1].y;
+      Q1[0] = tri1[0].z; Q1[1] = tri1[0].y;
+      R1[0] = tri1[2].z; R1[1] = tri1[2].y; 
+
+      P2[0] = tri2[1].z; P2[1] = tri2[1].y;
+      Q2[0] = tri2[0].z; Q2[1] = tri2[0].y;
+      R2[0] = tri2[2].z; R2[1] = tri2[2].y; 
+
+   } else if (( n_y > n_z ) && ( n_y >= n_x )) {
+      // Project onto plane XZ
+
+      P1[0] = tri1[1].x; P1[1] = tri1[1].z;
+      Q1[0] = tri1[0].x; Q1[1] = tri1[0].z;
+      R1[0] = tri1[2].x; R1[1] = tri1[2].z; 
+
+      P2[0] = tri2[1].x; P2[1] = tri2[1].z;
+      Q2[0] = tri2[0].x; Q2[1] = tri2[0].z;
+      R2[0] = tri2[2].x; R2[1] = tri2[2].z; 
+
+   } else {
+      // Project onto plane XY
+
+      P1[0] = tri1[0].x; P1[1] = tri1[0].y; 
+      Q1[0] = tri1[1].x; Q1[1] = tri1[1].y; 
+      R1[0] = tri1[2].x; R1[1] = tri1[2].z; 
+
+      P2[0] = tri2[0].x; P2[1] =tri2[0].y; 
+      Q2[0] = tri2[1].x; Q2[1] = tri2[1].y; 
+      R2[0] = tri2[2].x; R2[1] = tri2[2].y; 
+   }
+
+   return tri_tri_overlap_test_2d(P1,Q1,R1,P2,Q2,R2);
+
+};
+
+
+int Check_min_max(vec3 p1,vec3 q1,vec3 r1,vec3 p2,vec3 q2,vec3 r2)
+{
+   vec3 v1,v2,n1,n2;
+
+   v1=p2-q1;
+   v2=p1-q1;
+   n1=cross(v1,v2);
+
+   v1=q2-q1;
+   if(dot(v1,n1)>0.0)
+      return 0;
+
+   v1=p2-p1;
+   v2=r1-p1;
+   n1=cross(v1,v2);
+   v1=r2-p1;
+   if(dot(v1,n1)>0.0)
+      return 0;
+   else
+      return 1;
+}
+
+int tri_tri_3D(vec3 tri1[3],vec3 tri2[3], vec3 dist_tri2,vec3 n1,vec3 n2)
+{
+   if (dist_tri2.x > 0.0f) { 
+      if (dist_tri2.y > 0.0f) 
+         return Check_min_max(tri1[0],tri1[2],tri1[1],tri2[2],tri2[0],tri2[1]);
+      else if (dist_tri2.z > 0.0f) 
+         return Check_min_max(tri1[0],tri1[2],tri1[1],tri2[1],tri2[2],tri2[0]);
+      else 
+         return    Check_min_max(tri1[0],tri1[1],tri1[2],tri2[0],tri2[1],tri2[2]);
+   }
+   else if (dist_tri2.x < 0.0f) { 
+      if (dist_tri2.y < 0.0f) 
+         return Check_min_max(tri1[0],tri1[1],tri1[2],tri2[2],tri2[0],tri2[1]);
+      else if (dist_tri2.z < 0.0f) 
+         return Check_min_max(tri1[0],tri1[1],tri1[2],tri2[1],tri2[2],tri2[0]);
+      else 
+         return Check_min_max(tri1[0],tri1[2],tri1[1],tri2[0],tri2[1],tri2[2]);
+   } else { 
+      if (dist_tri2.y < 0.0f) { 
+         if (dist_tri2.z >= 0.0f)  
+            return Check_min_max(tri1[0],tri1[2],tri1[1],tri2[1],tri2[2],tri2[0]);
+         else 
+            return    Check_min_max(tri1[0],tri1[1],tri1[2],tri2[0],tri2[1],tri2[2]);
+      } 
+      else if (dist_tri2.y > 0.0f) { 
+         if (dist_tri2.z > 0.0f) 
+            return    Check_min_max(tri1[0],tri1[2],tri1[1],tri2[0],tri2[1],tri2[2]);
+         else  
+            return Check_min_max(tri1[0],tri1[1],tri1[2],tri2[1],tri2[2],tri2[0]);
+      } 
+      else  { 
+         if (dist_tri2.z > 0.0f) 
+            return Check_min_max(tri1[0],tri1[1],tri1[2],tri2[2],tri2[0],tri2[1]);
+         else if (dist_tri2.z < 0.0f) 
+            return Check_min_max(tri1[0],tri1[2],tri1[1],tri2[2],tri2[0],tri2[1]);
+         else 
+            return coplanar_tri_tri3d(tri1,tri2,n1,n2);
+      }
+   }
+}
+int tri_tri_overlap_3D(vec3 tri1,vec3 tri2 )
+{
+   //real p1[3], real q1[3], real r1[3], real p2[3], real q2[3], real r2[3]
+   //
+   vec3 tri1_vtx[3], tri2_vtx[3];
+
+   tri1_vtx[0]=vec3(PositionIn[int(tri1.x)]);
+   tri1_vtx[1]=vec3(PositionIn[int(tri1.y)]);
+   tri1_vtx[2]=vec3(PositionIn[int(tri1.z)]);
+
+   tri2_vtx[0]=vec3(PositionIn[int(tri2.x)].xyz);
+   tri2_vtx[1]=vec3(PositionIn[int(tri2.y)].xyz);
+   tri2_vtx[2]=vec3(PositionIn[int(tri2.z)].xyz);
+
+   vec3 dist_tri1,dist_tri2;
+   vec3 n1,n2;
+   vec3 v1,v2;
+   //compute distance signs of tri1_vtx to the plane of triangle2
+
+   v1=tri2_vtx[0]-tri2_vtx[2];
+   v2=tri2_vtx[1]-tri2_vtx[2];
+   n2=cross(v1,v2);
+
+   v1=tri1_vtx[0]-tri2_vtx[2];
+   dist_tri1.x=dot(v1,n2);
+
+   v1=tri1_vtx[1]-tri2_vtx[2];
+   dist_tri1.y=dot(v1,n2);
+
+   v1=tri1_vtx[2]-tri2_vtx[2];
+   dist_tri1.z=dot(v1,n2);
+
+   if(((dist_tri1.x*dist_tri1.y)>0.0)&&((dist_tri1.x*dist_tri1.z)>0.0))
+      return 0;
+
+   //compute distance signs of tri2_vtx to the plane of triangle1
+
+   v1=tri1_vtx[1]-tri1_vtx[0];
+   v2=tri1_vtx[2]-tri1_vtx[0];
+   n1=cross(v1,v2);
+
+   v1=tri2_vtx[0]-tri1_vtx[2];
+   dist_tri2.x=dot(v1,n1);
+
+   v1=tri2_vtx[1]-tri1_vtx[2];
+   dist_tri2.y=dot(v1,n1);
+
+   v1=tri2_vtx[2]-tri1_vtx[2];
+   dist_tri2.z=dot(v1,n1);
+
+   if(((dist_tri2.x*dist_tri2.y)>0.0)&&((dist_tri2.x*dist_tri2.z)>0.0))
+      return 0;
+   // permutation in a canonical form tri1's vertices
+
+   vec3 tmp1[3],tmp2[3],tmp3;
+   if (dist_tri1.x > 0.0f) {
+      if (dist_tri1.y > 0.0f) 
+      {
+
+         tmp1[0]=tri1_vtx[2];
+         tmp1[1]=tri1_vtx[0] ;
+         tmp1[2]=tri1_vtx[1];
+
+         tmp2[0]=tri2_vtx[0];
+         tmp2[1]=tri2_vtx[2];
+         tmp2[2]=tri2_vtx[1];
+
+         tmp3.x=dist_tri2.x;
+         tmp3.y=dist_tri2.z;
+         tmp3.z=dist_tri2.y;
+
+         return tri_tri_3D(tmp1,tmp2,tmp3,n1,n2);
+      }
+      else if (dist_tri1.z > 0.0f) 
+      {
+         tmp1[0]=tri1_vtx[1];
+         tmp1[1]=tri1_vtx[2] ;
+         tmp1[2]=tri1_vtx[0];
+
+         tmp2[0]=tri2_vtx[0];
+         tmp2[1]=tri2_vtx[2];
+         tmp2[2]=tri2_vtx[1];
+
+         tmp3.x=dist_tri2.x;
+         tmp3.y=dist_tri2.z;
+         tmp3.z=dist_tri2.y;
+
+         return tri_tri_3D(tmp1,tmp2,tmp3,n1,n2);
+      }
+      else
+      {
+         tmp1[0]=tri1_vtx[0];
+         tmp1[1]=tri1_vtx[1] ;
+         tmp1[2]=tri1_vtx[2];
+
+         tmp2[0]=tri2_vtx[0];
+         tmp2[1]=tri2_vtx[1];
+         tmp2[2]=tri2_vtx[2];
+
+         tmp3.x=dist_tri2.x;
+         tmp3.y=dist_tri2.y;
+         tmp3.z=dist_tri2.z;
+         return tri_tri_3D(tmp1,tmp2,tmp3,n1,n2);
+      }
+   } else if (dist_tri1.x < 0.0f) {
+      if (dist_tri1.y < 0.0f) 
+      {
+         tmp1[0]=tri1_vtx[2];
+         tmp1[1]=tri1_vtx[0] ;
+         tmp1[2]=tri1_vtx[1];
+
+         tmp2[0]=tri2_vtx[0];
+         tmp2[1]=tri2_vtx[1];
+         tmp2[2]=tri2_vtx[2];
+
+         tmp3.x=dist_tri2.x;
+         tmp3.y=dist_tri2.y;
+         tmp3.z=dist_tri2.z;
+         return tri_tri_3D(tmp1,tmp2,tmp3,n1,n2);
+      }
+      else if (dist_tri1.z < 0.0f) 
+      {
+
+         tmp1[0]=tri1_vtx[1];
+         tmp1[1]=tri1_vtx[2] ;
+         tmp1[2]=tri1_vtx[0];
+
+         tmp2[0]=tri2_vtx[0];
+         tmp2[1]=tri2_vtx[1];
+         tmp2[2]=tri2_vtx[2];
+
+         tmp3.x=dist_tri2.x;
+         tmp3.y=dist_tri2.y;
+         tmp3.z=dist_tri2.z;
+         return    tri_tri_3D(tmp1,tmp2,tmp3,n1,n2);
+      }
+      else
+      {
+         tmp1[0]=tri1_vtx[0];
+         tmp1[1]=tri1_vtx[1] ;
+         tmp1[2]=tri1_vtx[2];
+
+         tmp2[0]=tri2_vtx[0];
+         tmp2[1]=tri2_vtx[2];
+         tmp2[2]=tri2_vtx[1];
+
+         tmp3.x=dist_tri2.x;
+         tmp3.y=dist_tri2.z;
+         tmp3.z=dist_tri2.y;
+         return tri_tri_3D(tmp1,tmp2,tmp3,n1,n2);
+      }
+   } else {
+      if (dist_tri1.y < 0.0f) {
+         if (dist_tri1.z >= 0.0f) 
+         {
+            tmp1[0]=tri1_vtx[1];
+            tmp1[1]=tri1_vtx[2] ;
+            tmp1[2]=tri1_vtx[0];
+
+            tmp2[0]=tri2_vtx[0];
+            tmp2[1]=tri2_vtx[2];
+            tmp2[2]=tri2_vtx[1];
+
+            tmp3.x=dist_tri2.x;
+            tmp3.y=dist_tri2.z;
+            tmp3.z=dist_tri2.y;
+            return    tri_tri_3D(tmp1,tmp2,tmp3,n1,n2);
+         }
+         else 
+         {
+            tmp1[0]=tri1_vtx[0];
+            tmp1[1]=tri1_vtx[1] ;
+            tmp1[2]=tri1_vtx[2];
+
+            tmp2[0]=tri2_vtx[0];
+            tmp2[1]=tri2_vtx[1];
+            tmp2[2]=tri2_vtx[2];
+
+            tmp3.x=dist_tri2.x;
+            tmp3.y=dist_tri2.y;
+            tmp3.z=dist_tri2.z;
+            return tri_tri_3D(tmp1,tmp2,tmp3,n1,n2);
+         }
+      }
+      else if (dist_tri1.y > 0.0f) {
+         if (dist_tri1.z > 0.0f) 
+         {
+            tmp1[0]=tri1_vtx[0];
+            tmp1[1]=tri1_vtx[1] ;
+            tmp1[2]=tri1_vtx[2];
+
+            tmp2[0]=tri2_vtx[0];
+            tmp2[1]=tri2_vtx[2];
+            tmp2[2]=tri2_vtx[1];
+
+            tmp3.x=dist_tri2.x;
+            tmp3.y=dist_tri2.z;
+            tmp3.z=dist_tri2.y;
+            return tri_tri_3D(tmp1,tmp2,tmp3,n1,n2);
+         }
+         else 
+         {
+            tmp1[0]=tri1_vtx[1];
+            tmp1[1]=tri1_vtx[2] ;
+            tmp1[2]=tri1_vtx[0];
+
+            tmp2[0]=tri2_vtx[0];
+            tmp2[1]=tri2_vtx[1];
+            tmp2[2]=tri2_vtx[2];
+
+            tmp3.x=dist_tri2.x;
+            tmp3.y=dist_tri2.y;
+            tmp3.z=dist_tri2.z;
+            return tri_tri_3D(tmp1,tmp2,tmp3,n1,n2);
+         }
+      }
+      else  {
+         if (dist_tri1.z > 0.0f) 
+         {
+            tmp1[0]=tri1_vtx[2];
+            tmp1[1]=tri1_vtx[0] ;
+            tmp1[2]=tri1_vtx[1];
+
+            tmp2[0]=tri2_vtx[0];
+            tmp2[1]=tri2_vtx[1];
+            tmp2[2]=tri2_vtx[2];
+
+            tmp3.x=dist_tri2.x;
+            tmp3.y=dist_tri2.y;
+            tmp3.z=dist_tri2.z;
+            return tri_tri_3D(tmp1,tmp2,tmp3,n1,n2);
+
+         }
+         else if (dist_tri1.z < 0.0f) 
+         {
+            tmp1[0]=tri1_vtx[2];
+            tmp1[1]=tri1_vtx[0] ;
+            tmp1[2]=tri1_vtx[1];
+
+            tmp2[0]=tri2_vtx[0];
+            tmp2[1]=tri2_vtx[2];
+            tmp2[2]=tri2_vtx[1];
+
+            tmp3.x=dist_tri2.x;
+            tmp3.y=dist_tri2.z;
+            tmp3.z=dist_tri2.y;
+            return tri_tri_3D(tmp1,tmp2,tmp3,n1,n2);
+         }
+         else
+         {
+            return coplanar_tri_tri3d(tri1_vtx,tri2_vtx,n1,n2);
+         }
+      }
+   }
+}
+
+uniform int Offset;
+uniform int FaceOffset;
+
+vec3 color1 = vec3(1.0,1.0,0.9);
+vec3 color2 = vec3(1.0,1.0,1.0);
+   
+void main() {
+  
+  uint idx_x = gl_GlobalInvocationID.x;  
+  uint idx_y = gl_GlobalInvocationID.y + Offset; 
+    
+  vec4 BB1 = BBFaceList[idx_x];
+  vec4 BB2 = BBFaceList[idx_y];
+
+  int bbindex1 = int(BB1.y);
+  int bbindex2 = int(BB2.y);
+
+  int faceIndex1 = int(BB1.x);
+  int faceIndex2 = int(BB2.x) + FaceOffset;
+     
+  if(MaskResult[bbindex1*64+bbindex2]!=1)
+  {
+   return;	
+  }	
+
+   float res = tri_tri_overlap_3D(FaceInformation[faceIndex1].xyz,FaceInformation[faceIndex2].xyz);   
+   
+   if(res==0.0) return;
+      
+   Normal[int(FaceInformation[faceIndex1].x)].xyz = vec3(1.0,0.0,0.0);
+   Normal[int(FaceInformation[faceIndex1].y)].xyz = vec3(1.0,0.0,0.0);
+   Normal[int(FaceInformation[faceIndex1].z)].xyz = vec3(1.0,0.0,0.0);
+      
+   Normal[int(FaceInformation[faceIndex2].x)].xyz = vec3(0.0,0.0,1.0);
+   Normal[int(FaceInformation[faceIndex2].y)].xyz = vec3(0.0,0.0,1.0);
+   Normal[int(FaceInformation[faceIndex2].z)].xyz = vec3(0.0,0.0,1.0);
+   
+}
