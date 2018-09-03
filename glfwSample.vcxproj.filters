@@ -133,5 +133,8 @@
     <None Include="vertex.shader">
       <Filter>BasicShader</Filter>
     </None>
+    <None Include="CollisionResponse.cshader">
+      <Filter>ComputeShader</Filter>
+    </None>
   </ItemGroup>
 </Project>

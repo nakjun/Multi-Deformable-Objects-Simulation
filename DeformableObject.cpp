@@ -36,7 +36,7 @@ CDeformable::CDeformable(int number)
 
 		mSrpingSystem = new CMassSpringSystem(INTEGRATION_METHOD::SEMI_EULER);
 		//mss	   ks  kd    mass      position	  model_name
-		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(0.3, 0.0, 0.0), alphaA);
+		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(1.5, 1.0, 0.0), alphaA);
 
 		mMSSList.push_back(mSrpingSystem);
 
@@ -50,7 +50,7 @@ CDeformable::CDeformable(int number)
 
 		mSrpingSystem = new CMassSpringSystem(INTEGRATION_METHOD::SEMI_EULER);
 		//mss	   ks  kd    mass      position	  model_name
-		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(-0.3, 0, 0), alphaL);
+		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(-2.3, 0.0, 0), alphaL);
 
 		mMSSList.push_back(mSrpingSystem);
 
@@ -58,6 +58,30 @@ CDeformable::CDeformable(int number)
 
 		delete of;
 	}
+	
+	ivec3 facearr;
+	for (int i = 0; i < (*curMSS)->mFaceArray.size(); i++)
+	{
+		facearr = (*curMSS)->mFaceArray.at(i);
+		(*curMSS)->mParticleArray[facearr.x].facelist->push_back(ivec2(i, 0));
+		(*curMSS)->mParticleArray[facearr.y].facelist->push_back(ivec2(i, 0));
+		(*curMSS)->mParticleArray[facearr.z].facelist->push_back(ivec2(i, 0));
+		if (maxFaceListSize < (*curMSS)->mParticleArray[facearr.x].facelist->size()) maxFaceListSize = (*curMSS)->mParticleArray[facearr.x].facelist->size();
+		if (maxFaceListSize < (*curMSS)->mParticleArray[facearr.y].facelist->size()) maxFaceListSize = (*curMSS)->mParticleArray[facearr.y].facelist->size();
+		if (maxFaceListSize < (*curMSS)->mParticleArray[facearr.z].facelist->size()) maxFaceListSize = (*curMSS)->mParticleArray[facearr.z].facelist->size();
+	}
+
+	printf("max : %d", maxFaceListSize);
+
+	/*for (int i = 0; i < (*curMSS)->GetNumParticles(); i++)
+	{
+		CParticle temp = (*curMSS)->mParticleArray[i];
+		for (int j = 0; j < temp.facelist->size(); i++)
+		{
+			
+		}
+	}*/
+
 	Box = new CBox();
 	springinformationTable = (int **)malloc((*curMSS)->GetNumParticles()*sizeof(int));	
 
@@ -67,7 +91,6 @@ CDeformable::CDeformable(int number)
 		currIndex[i] = 0;
 	}
 	
-
 	for (int i = 0; i < (*curMSS)->GetNumSpring(); i++){
 		CSpring *temp = (*curMSS)->GetSpring(i);			
 			

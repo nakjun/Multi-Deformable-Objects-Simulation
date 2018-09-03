@@ -7,8 +7,9 @@ CParticle::CParticle(void)
 {
 	mForce = mVel = mPos = vec3(0);
 	mMass = 1.0;
+	facelist = new vector<ivec2>();
+	facelist->clear();
 }
-
 
 CParticle::~CParticle(void)
 {

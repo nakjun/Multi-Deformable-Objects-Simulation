@@ -37,6 +37,8 @@ public:
 	//CPU 사용
 	CBox *Box;
 
+	int maxFaceListSize;
+
 	//GPU 사용
 	CTree *Octree;
 	vec3 center;	

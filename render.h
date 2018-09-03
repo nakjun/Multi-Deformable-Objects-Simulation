@@ -24,6 +24,7 @@ public:
 
 	void resetNodeSpringTableSSBO();
 	void resetPositionSSBO();
+	void resetPrevPositionSSBO();
 	void resetSpringSSBO();
 	void resetVelocitySSBO();
 	void resetSpringForceSSBO();
@@ -40,6 +41,7 @@ public:
 	void resetMaskSSBO();
 	void resetFaceListSSBO();
 	void resetBBLineSSBO();
+	void resetNodeFaceResponseForceSSBO();
 
 	GLuint compileShader(std::string path_to_file, GLenum shader_type);
 	void printProgramLog(GLuint shader);
@@ -73,7 +75,7 @@ public:
 	//Shader Handler
 	uint32_t render_program_handle = 0;
 	uint32_t compute_program_handle[3];
-	uint32_t BB_program_handle[3];
+	uint32_t BB_program_handle[4];
 
 	uint32_t particle_position_vao_handle = 0;
 	uint32_t particle_buffer_handle = 0;
@@ -86,6 +88,7 @@ public:
 	
 	//SSBO ID
 	GLuint SSBOPos;
+	GLuint SSBOPrevPos;
 	GLuint SSBONormal;
 	GLuint SSBOSpring;
 	GLuint SSBOVel;
@@ -102,6 +105,7 @@ public:
 	GLuint SSBOMaskBoundingBox;	
 	GLuint SSBOMaskTable;
 	GLuint SSBOFaceList;
+	GLuint SSBONodeFaceResponseTable;
 	GLuint SSBOBBLineData;
 	GLuint VAO;
 
@@ -117,6 +121,7 @@ public:
 	int ObjectCount;
 	bool isRender;
 	int fcnt;
+	int nodefacemaxSize;
 	int BBFaceCount;
 	mat4 Projection;
 	mat4 View;

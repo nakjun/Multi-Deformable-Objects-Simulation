@@ -12,10 +12,15 @@ using namespace std;
 #define BBCOUNT 64
 
 vec3 lightPos = vec3(0.0f, 15.0f, 1.0f);
-
+int faceCount2;
 struct vertex4f {
 	GLfloat x, y, z;
 	GLfloat index;
+};
+struct mface
+{
+	vertex4f faceindex;
+	vertex4f nodefaceresponseindex;
 };
 struct spring
 {
@@ -143,8 +148,7 @@ void CRender::invoke_compute_shader(){
 	workingGroups = VerticesCount / 512;
 	glDispatchCompute(workingGroups + 1, 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
-
-
+	
 	//Node Shader Use and Node Pos Update(Using Numerical Integration)
 	glUseProgram(compute_program_handle[0]);
 	uniform_loc = glGetUniformLocation(compute_program_handle[0], "VertexCount");
@@ -192,7 +196,6 @@ void CRender::invoke_collisionBB_shader()
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
 	
 	// Face-Face Intersection : N' * M' Invoke
-
 	glUseProgram(BB_program_handle[2]);
 	uniform_loc = glGetUniformLocation(BB_program_handle[2], "Offset");
 
@@ -206,11 +209,42 @@ void CRender::invoke_collisionBB_shader()
 	{
 		glUniform1i(uniform_loc, fCountList.at(0));
 	}
+	uniform_loc = glGetUniformLocation(BB_program_handle[2], "obj2facecount");
+
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, faceCount2);
+	}
+
 	workingGroups = mDefList.at(0)->sum / 32;
 	int workingGroups2 = mDefList.at(1)->sum / 32;
 	glDispatchCompute(workingGroups + 1, workingGroups2 + 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge	
-	
+
+	// Face-Face Collision Response : N' * M' Invoke
+	glUseProgram(BB_program_handle[3]);
+	uniform_loc = glGetUniformLocation(BB_program_handle[3], "Offset");
+
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, mDefList.at(0)->sum);
+	}
+	uniform_loc = glGetUniformLocation(BB_program_handle[3], "FaceOffset");
+
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, fCountList.at(0));
+	}
+	uniform_loc = glGetUniformLocation(BB_program_handle[2], "obj2facecount");
+
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, faceCount2);
+	}
+	workingGroups = mDefList.at(0)->sum / 32;
+	workingGroups2 = mDefList.at(1)->sum / 32;
+	glDispatchCompute(workingGroups + 1, workingGroups2 + 1, 1);
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge	
 }
 
 void CRender::invoke_updateBB_shader(){
@@ -254,13 +288,6 @@ void CRender::render()
 	
 	glfwSwapBuffers(Scenewindow);
 	fcnt++;
-
-	if (fcnt == 1700)
-	{
-		check();
-		check3();
-		check2();
-	}
 
 	glfwPollEvents();
 }
@@ -358,6 +385,7 @@ void CRender::generateShaders(){
 	printProgramLog(compute_program_handle[2]);
 	glDeleteShader(compute_shader_handle);
 
+	//BoundingBox Collision CS
 	uint32_t BB_compute_shader_handle = compileShader("BBCollision.cshader", GL_COMPUTE_SHADER);
 	BB_program_handle[0] = glCreateProgram();
 	glAttachShader(BB_program_handle[0], BB_compute_shader_handle);
@@ -365,6 +393,7 @@ void CRender::generateShaders(){
 	printProgramLog(BB_program_handle[0]);
 	glDeleteShader(BB_compute_shader_handle);
 
+	//BoundingBox Update CS
 	BB_compute_shader_handle = compileShader("BBUpdate.cshader", GL_COMPUTE_SHADER);
 	BB_program_handle[1] = glCreateProgram();
 	glAttachShader(BB_program_handle[1], BB_compute_shader_handle);
@@ -372,11 +401,20 @@ void CRender::generateShaders(){
 	printProgramLog(BB_program_handle[1]);
 	glDeleteShader(BB_compute_shader_handle);
 
+	//Face-Face Intersection CS
 	BB_compute_shader_handle = compileShader("FaceFaceIntersection.cshader", GL_COMPUTE_SHADER);
 	BB_program_handle[2] = glCreateProgram();
 	glAttachShader(BB_program_handle[2], BB_compute_shader_handle);
 	glLinkProgram(BB_program_handle[2]);
 	printProgramLog(BB_program_handle[2]);
+	glDeleteShader(BB_compute_shader_handle);
+
+	//Collision Handling CS
+	BB_compute_shader_handle = compileShader("CollisionResponse.cshader", GL_COMPUTE_SHADER);
+	BB_program_handle[3] = glCreateProgram();
+	glAttachShader(BB_program_handle[3], BB_compute_shader_handle);
+	glLinkProgram(BB_program_handle[3]);
+	printProgramLog(BB_program_handle[3]);
 	glDeleteShader(BB_compute_shader_handle);
 
 }
@@ -514,6 +552,26 @@ void CRender::generateBuffers(){
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, SSBOMaskBoundingBox);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+	if (glIsBuffer(SSBOPrevPos)) {
+		glDeleteBuffers(1, &SSBOPrevPos);
+	};
+	glGenBuffers(1, &SSBOPrevPos);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOPrevPos);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, VerticesCount * sizeof(vertex4f), NULL, GL_STATIC_DRAW);
+	resetPrevPositionSSBO();
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, SSBOPrevPos);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	/*if (glIsBuffer(SSBONodeFaceResponseTable)) {
+		glDeleteBuffers(1, &SSBONodeFaceResponseTable);
+	};
+	glGenBuffers(1, &SSBONodeFaceResponseTable);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBONodeFaceResponseTable);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, VerticesCount * nodefacemaxSize * sizeof(vertex4f), NULL, GL_STATIC_DRAW);
+	resetNodeFaceResponseForceSSBO();
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, SSBONodeFaceResponseTable);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);*/
+
 
 	// Allocation Node Position and Normal Buffer to VAO
 	glGenVertexArrays(1, &VAO);
@@ -528,6 +586,34 @@ void CRender::generateBuffers(){
 	glEnableVertexAttribArray(1);
 
 }
+
+void CRender::resetNodeFaceResponseForceSSBO()
+{
+	struct vertex4f* NodeFaceResponse = (struct vertex4f*) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, VerticesCount * nodefacemaxSize * sizeof(vertex4f), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+	for (int i = 0; i < VerticesCount * nodefacemaxSize; i++)
+	{
+		NodeFaceResponse[i].x = 0.0;
+		NodeFaceResponse[i].y = 0.0;
+		NodeFaceResponse[i].z = 0.0;
+		NodeFaceResponse[i].index = 0.0;
+	}
+	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+}
+
+void CRender::resetPrevPositionSSBO()
+{
+	struct vertex4f* PrevPos = (struct vertex4f*) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, VerticesCount * sizeof(vertex4f), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+
+	for (int i = 0; i < VerticesCount; i++)
+	{
+		PrevPos[i].x = 0.0;
+		PrevPos[i].y = 0.0;
+		PrevPos[i].z = 0.0;
+		PrevPos[i].index = 0.0;
+	}
+	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+}
+
 void CRender::resetParticleNormalSSBO(){
 	struct vertex4f* ParticleNormal = (struct vertex4f*) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, VerticesCount * FaceCount * sizeof(vertex4f), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
@@ -563,7 +649,7 @@ void CRender::resetNormalSSBO(){
 		VertexForece[i].x = 1.0;
 		VertexForece[i].y = 1.0;
 		VertexForece[i].z = 1.0;
-		VertexForece[i].index = 1.0;
+		VertexForece[i].index = 0.0;
 	}
 	//printf("Size of Vertex Normal is : [%d]", VerticesCount);
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -741,17 +827,24 @@ void CRender::resetSpringForceSSBO(){
 	}
 }
 void CRender::resetFaceSSBO(){
-
+	CDeformable *temp;
+	CMassSpringSystem *mTemp;
 	struct vertex4f* faceBuff = (struct vertex4f*) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, FACEARRAY.size() / 3 * sizeof(vertex4f), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 	int curr = 0;
 	int offset = 0;
+	for (int n = 0; n < mDefList.size(); n++){
+		temp = mDefList.at(n);
+		mTemp = *temp->curMSS;
+	}
 	for (int n = 0; n < fCountList.size(); n++)
 	{
 		for (int i = offset; i < offset + fCountList.at(n); i++){
 			faceBuff[i].x = (float)FACEARRAY.at((3*i));
-			faceBuff[i].y = (float)FACEARRAY.at((3 * i)+1);
-			faceBuff[i].z = (float)FACEARRAY.at((3 * i)+2);
+			faceBuff[i].y = (float)FACEARRAY.at((3 * i) + 1);
+			faceBuff[i].z = (float)FACEARRAY.at((3 * i) + 2);
 			faceBuff[i].index = (float)n;
+
+			//faceBuff[i].nodefaceresponseindex.x = (float)FACEARRAY.at((3 * i)) * nodefacemaxSize + find()
 		}
 		offset += fCountList.at(n);
 	}
@@ -904,6 +997,8 @@ void CRender::setFacePair()
 	int cnt1 = temp1->mSrpingSystem->mFaceArray.size();
 	int cnt2 = temp2->mSrpingSystem->mFaceArray.size();
 
+	faceCount2 = cnt2;
+
 	for (int i = 0; i < cnt1; i++)
 	{
 		for (int j = 0; j < cnt2; j++)
@@ -953,22 +1048,29 @@ void CRender::check(){
 
 void CRender::check2()
 {
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 20, SSBONormal);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBONormal);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 20, SSBOPos);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOPos);
 
 	struct vertex4f *ptr;
 	ptr = (struct vertex4f*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
 
-	FILE *fpbb = fopen("NormalData.txt", "w");
+	FILE *fpbb = fopen("PositionTest.txt", "w");
 	vector<vertex4f> array;
 	array.clear();
 
-	for (int i = 0; i < FACEARRAY.size()/3; i++){
+	int VERTEXSIZE = 0;
+
+	for (int i = 0; i < vCountList.size(); i++)
+	{
+		VERTEXSIZE += vCountList.at(i);
+	}
+
+	for (int i = 0; i < VERTEXSIZE; i++){
 		array.push_back(*ptr++);
 	}
 	printf("array Size : %d\n", array.size());
 
-	for (int i = 0; i < FACEARRAY.size() / 3; i++){
+	for (int i = 0; i < VERTEXSIZE; i++){
 		//fprintf(fpbb, "%d번째 FaceList 결과 : %f / [BB : %f] %f %f\n", i, array[i].x, array[i].y, array[i].z, array[i].index);
 		fprintf(fpbb, "%d,%f,%f,%f,%f\n", i, array[i].x, array[i].y, array[i].z, array[i].index);
 	}

@@ -14,6 +14,11 @@ layout(std430, binding = 0) buffer Pos {
    vec4 Positions[];
 };
 
+// Target 12 : Previous Vertex position
+layout(std430, binding = 12) buffer PrevPos {
+   vec4 PrevPositions[];
+};
+
 // Target 1 : Vertex velocity
 layout(std430, binding = 1) buffer Vel {
     vec4 Velocities[];
@@ -28,7 +33,6 @@ layout(std430, binding =3)  buffer NodeForce{
 layout(std430, binding =5)  buffer Res{
 	vec4 BB_RES[];
 };
-
 
 // Target 6 : Vertex Normal
 layout(std430, binding = 6) buffer NormalB {
@@ -58,21 +62,26 @@ void main() {
 
 	// 위치와 속도 읽기
 	vec3 vPos = Positions[index].xyz;
-	vec3 vVel = Velocities[index].xyz;	
+	
+	PrevPositions[index].xyz = vPos;
 
+	vec3 vVel = Velocities[index].xyz;	
+	
+	float vCollisionFlag = Normal[index].w;
+	
 	int obj = int(Positions[index].w);
 	
-	if(obj==1) gravity *= -0.5;
+	if(obj==1) gravity.x *= -0.5;
 
 	vec3 Force = Node_Force[index * 30 + 30].xyz;
 	
 	vec3 a = gravity + ( Force / 1.0f);
-
+		
 	vVel = vVel + a * dt ;
 
 	vPos += vVel * dt;
   
     //Status Update   
     Positions[index].xyz = vPos;   
-    Velocities[index].xyz = vVel;
+    Velocities[index].xyz = vVel;	
 }

@@ -10,8 +10,8 @@ Camera::Camera(void)
 
 	// Alphabet
 	x = 0.0;
-	y = 0.1;
-	z = 2;
+	y = 0.7;
+	z = 4.5;
 	
 	position =
 		::vec3(x, y, z);

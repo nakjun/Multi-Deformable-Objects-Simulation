@@ -12,9 +12,14 @@ layout(std430, binding=0) buffer PosIn {
   vec4 PositionIn[];
 };
 
-// Target 4 : Bounding Box Information
-layout(std430, binding = 4) buffer BBInformation {
-    BoundingBox BB_INFOR1[]; 
+// Target 12 : Previous Vertex position
+layout(std430, binding = 12) buffer PrevPos {
+   vec4 PrevPositions[];
+};
+
+// Target 1 : Vertex velocity
+layout(std430, binding = 1) buffer Vel {
+    vec4 Velocities[];
 };
 
 // Target 6 : Vertex Normal
@@ -557,39 +562,30 @@ int tri_tri_overlap_3D(vec3 tri1,vec3 tri2 )
 
 uniform int Offset;
 uniform int FaceOffset;
+uniform int obj2facecount;
 
 vec3 color1 = vec3(1.0,1.0,0.9);
 vec3 color2 = vec3(1.0,1.0,1.0);
    
 void main() {
   
-  uint idx_x = gl_GlobalInvocationID.x;  
-  uint idx_y = gl_GlobalInvocationID.y + Offset; 
+	uint idx_x = gl_GlobalInvocationID.x;  
+	uint idx_y = gl_GlobalInvocationID.y + Offset; 
     
-  vec4 BB1 = BBFaceList[idx_x];
-  vec4 BB2 = BBFaceList[idx_y];
+	vec4 BB1 = BBFaceList[idx_x];
+	vec4 BB2 = BBFaceList[idx_y];
 
-  int bbindex1 = int(BB1.y);
-  int bbindex2 = int(BB2.y);
+	int bbindex1 = int(BB1.y);
+	int bbindex2 = int(BB2.y);
 
-  int faceIndex1 = int(BB1.x);
-  int faceIndex2 = int(BB2.x) + FaceOffset;
-     
-  if(MaskResult[bbindex1*64+bbindex2]!=1)
-  {
-   return;	
-  }	
-
-   float res = tri_tri_overlap_3D(FaceInformation[faceIndex1].xyz,FaceInformation[faceIndex2].xyz);   
-   
-   if(res==0.0) return;
-      
-   Normal[int(FaceInformation[faceIndex1].x)].xyz = vec3(1.0,0.0,0.0);
-   Normal[int(FaceInformation[faceIndex1].y)].xyz = vec3(1.0,0.0,0.0);
-   Normal[int(FaceInformation[faceIndex1].z)].xyz = vec3(1.0,0.0,0.0);
-      
-   Normal[int(FaceInformation[faceIndex2].x)].xyz = vec3(0.0,0.0,1.0);
-   Normal[int(FaceInformation[faceIndex2].y)].xyz = vec3(0.0,0.0,1.0);
-   Normal[int(FaceInformation[faceIndex2].z)].xyz = vec3(0.0,0.0,1.0);
-   
+	int faceIndex1 = int(BB1.x);
+	int faceIndex2 = int(BB2.x) + FaceOffset;
+    
+	if(MaskResult[bbindex1*64+bbindex2]!=1)
+	{
+		return;	
+	}	
+	float res = tri_tri_overlap_3D(FaceInformation[faceIndex1].xyz,FaceInformation[faceIndex2].xyz);   
+	
+	FacePairwise[faceIndex1*obj2facecount+faceIndex2].z = res;   
 }

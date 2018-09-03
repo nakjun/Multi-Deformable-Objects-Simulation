@@ -192,6 +192,7 @@ void CObjectFactory::FaceLoad(std::vector<ivec3> *v, std::string file)
 {
 	//printf("face file open\n");
 	FILE *fp = fopen(file.c_str(), "r");
+	
 	if (fp == NULL)
 	{
 		printf("CObjectFactory face :: %s file open error\n", file);
@@ -203,17 +204,21 @@ void CObjectFactory::FaceLoad(std::vector<ivec3> *v, std::string file)
 		int t;
 		fscanf(fp, "%d %d", &maxNodes, &t);
 
-		//printf("Max Node : [%d] \n", maxNodes);
-
 		int tmp;
-
+				
 		ivec3 temp;
 		for (unsigned int i = 0; i < maxNodes; ++i)
 		{
 			if (t == 1)
-				fscanf(fp, "%d %d %d %d %d", &tmp, &temp.x, &temp.y, &temp.z, &tmp);
+			{
+				fscanf(fp, "%d %d %d %d %d", &tmp, &temp.x, &temp.y, &temp.z, &tmp);				
+
+			}				
 			else if (t == 0)
-				fscanf(fp, "%d %d %d %d", &tmp, &temp.x, &temp.y, &temp.z);
+			{
+				fscanf(fp, "%d %d %d %d", &tmp, &temp.x, &temp.y, &temp.z);				
+			}
+				
 			if (!file.compare(boxFace) || !file.compare(sphereFace)){
 
 			}
@@ -222,7 +227,7 @@ void CObjectFactory::FaceLoad(std::vector<ivec3> *v, std::string file)
 			}
 			v->push_back(temp);
 		}
-		//printf("face file close\n");
+		//printf("face file close\n");		
 	}
 }
 void CObjectFactory::ElementLoad(std::vector<CSpring> *s, std::vector<ivec3> *f, std::vector<vec3> *v, std::string file)

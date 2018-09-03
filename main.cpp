@@ -14,8 +14,10 @@ double summation=0.0;
 double update = 0.0;
 double collision = 0.0;
 double rendering = 0.0;
+bool flag;
 void init()
 {
+	flag = true;
 	width = 1024; height = 600;
 	render = new CRender();
 	render->init(width, height);
@@ -35,6 +37,7 @@ void init()
 	//render->newFaceCount += obj->sum;	
 	render->mDefList.push_back(obj);	
 	int ttt = obj->sum;	
+	int max = obj->maxFaceListSize;
 	render->BBFaceCount += ttt;
 	printf("%d\n", render->BBFaceCount);
 	render->VerticesCount += v_cnt;
@@ -46,6 +49,15 @@ void init()
 	
 	obj = new CDeformable(1);
 	v_cnt = (*obj->curMSS)->GetNumParticles();
+	if (max < obj->maxFaceListSize)
+	{
+		max = obj->maxFaceListSize;
+	}
+
+	render->nodefacemaxSize = max;
+
+	printf("max is %d\n", render->nodefacemaxSize);
+
 	obj->SetBoundingBox(render->VerticesCount);
 	obj->setFaceList();
 	render->mDefList.push_back(obj);	
@@ -57,6 +69,7 @@ void init()
 	render->ObjectCount++;
 	render->vCountList.push_back(v_cnt);
 	render->sCountList.push_back(obj->mSrpingSystem->mNumSprings);
+	
 }
 
 static void error_callback(int error, const char* description)
@@ -92,6 +105,11 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 	if (key == GLFW_KEY_S && action == GLFW_PRESS)
 	{
 		render->cam->z--;
+	}
+	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+	{		
+		if (flag == true) flag = false;
+		else flag = true;
 	}
 	printf("x : %d y : %d z : %d\n", render->cam->x, render->cam->y, render->cam->z);
 }
@@ -246,35 +264,16 @@ int main(void)
 	summation = 0.0;
 	//Main Loop
 	do
-	{
-		/*
-		t2 = system_clock::now();
-		render->invoke_updateBB_shader();
-		render->invoke_collisionBB_shader();
-		t1 = system_clock::now();
-		duration<double> dt = t1 - t2;
-		collision += dt.count();
-		
-		t2 = system_clock::now();
-		render->invoke_compute_shader();
-		t1 = system_clock::now();
-		duration<double> dt2 = t1 - t2;
-		summation += dt2.count();
-
-		render->render();
-		*/
-
-		render->invoke_updateBB_shader();
-		render->invoke_collisionBB_shader();
-		render->invoke_compute_shader();
-		render->render();
-
-		if (render->fcnt == 5000){					
-			printf("MSS time : %f\n", summation);
-			printf("Collision time : %f\n", collision); 
-			//printf("Average FPS : %.3f\n", 5000.0f / summation);
-			break;
+	{	
+		if (flag)
+		{
+			render->invoke_compute_shader();
+			render->invoke_updateBB_shader();
+			render->invoke_collisionBB_shader();
+			
 		}
+			render->render();
+		
 	} //Check if the ESC key had been pressed or if the window had been closed
 	
 	while (!glfwWindowShouldClose(window));		

@@ -36,5 +36,7 @@ public:
 	vec3 mPrevPos;
 	vec3 mPrevVel;
 	vec3 mPrevForce;
+
+	vector<ivec2> *facelist;
 };
 
