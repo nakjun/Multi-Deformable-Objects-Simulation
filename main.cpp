@@ -272,8 +272,7 @@ int main(void)
 			render->invoke_collisionBB_shader();
 			
 		}
-			render->render();
-		
+			render->render();		
 	} //Check if the ESC key had been pressed or if the window had been closed
 	
 	while (!glfwWindowShouldClose(window));		
