@@ -9,9 +9,15 @@ Camera::Camera(void)
 	z = 150;*/
 
 	// Alphabet
+	/*
 	x = 0.0;
 	y = 0.7;
-	z = 4.5;
+	z = 4.5;*/
+
+	//test
+	x = 0.0;
+	y = 5.0;
+	z = 9.5;
 	
 	position =
 		::vec3(x, y, z);

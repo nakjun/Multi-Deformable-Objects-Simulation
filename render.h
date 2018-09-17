@@ -27,6 +27,7 @@ public:
 	void resetPrevPositionSSBO();
 	void resetSpringSSBO();
 	void resetVelocitySSBO();
+	void resetPrevVelocitySSBO();
 	void resetSpringForceSSBO();
 	void resetNodeForceMapSSBO();
 	void resetNodeForceSummationSSBO();
@@ -92,6 +93,7 @@ public:
 	GLuint SSBONormal;
 	GLuint SSBOSpring;
 	GLuint SSBOVel;
+	GLuint SSBOPrevVel;
 	GLuint SSBOForce;
 	GLuint SSBOBoundingBoxMin;	
 	GLuint SSBONodeForceMap;

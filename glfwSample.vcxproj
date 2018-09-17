@@ -113,6 +113,7 @@
     <None Include="BBvertex.shader" />
     <None Include="BoundingBox.cshader" />
     <None Include="CollisionResponse.cshader" />
+    <None Include="CollisionResponse_prev.cshader" />
     <None Include="FaceFaceIntersection.cshader" />
     <None Include="fragment.shader" />
     <None Include="MapFragment.shader" />

@@ -24,6 +24,12 @@ layout(std430, binding = 1) buffer Vel {
     vec4 Velocities[];
 };
 
+// Target 13 : Vertex Prev velocity
+layout(std430, binding = 1) buffer PrevVel {
+    vec4 PrevVelocities[];
+};
+
+
 //Target 4 :Particle Force
 layout(std430, binding =3)  buffer NodeForce{
 	vec4 Node_Force[];
@@ -51,8 +57,10 @@ uniform int ObjectCount;
 
 float dt=0.0005;
 
-vec3 gravity = vec3(9.8, 0.0f,0.0);
-//vec3 gravity = vec3(0.0, -9.8f,0.0);
+vec3 externalForce = vec3(0.0);
+//vec3 gravity = vec3(9.8, -9.8f,0.0);
+vec3 gravity = vec3(4.9f, -9.8f,0.0);
+//vec3 gravity = vec3(0.0);
 
 void main() {
 
@@ -64,18 +72,20 @@ void main() {
 	vec3 vPos = Positions[index].xyz;
 	
 	PrevPositions[index].xyz = vPos;
-
+		
 	vec3 vVel = Velocities[index].xyz;	
+
+	PrevVelocities[index].xyz = vVel;
 	
 	float vCollisionFlag = Normal[index].w;
 	
 	int obj = int(Positions[index].w);
 	
-	if(obj==1) gravity.x *= -0.5;
+	if(obj==0) gravity.y = 0.0;
 
 	vec3 Force = Node_Force[index * 30 + 30].xyz;
 	
-	vec3 a = gravity + ( Force / 1.0f);
+	vec3 a = gravity + ( externalForce + Force / 1.0f);
 		
 	vVel = vVel + a * dt ;
 
