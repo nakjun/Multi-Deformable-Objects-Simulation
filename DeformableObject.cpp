@@ -22,6 +22,8 @@ CSpring *sp;
 #define alphaX "../models/alpha/X"
 #define alphaL "../models/alpha/L5"
 #define box "../models/box/box"
+#define bunny "../models/bunny/bunny_741"
+#define torus "../models/torus/Torus"
 
 float tmp;
 int currIndex = 0;
@@ -36,7 +38,7 @@ CDeformable::CDeformable(int number)
 
 		mSrpingSystem = new CMassSpringSystem(INTEGRATION_METHOD::SEMI_EULER);
 		//mss	   ks  kd    mass      position	  model_name
-		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(0.45, 5.0, 0.0), alphaA);
+		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(3.45, 3.8, 0.0), torus);
 
 		mMSSList.push_back(mSrpingSystem);
 
@@ -50,7 +52,7 @@ CDeformable::CDeformable(int number)
 
 		mSrpingSystem = new CMassSpringSystem(INTEGRATION_METHOD::SEMI_EULER);
 		//mss	   ks  kd    mass      position	  model_name
-		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(0.0, 0.0, 0), alphaL);
+		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(-2.7, 2.0, 0), torus);
 
 		mMSSList.push_back(mSrpingSystem);
 

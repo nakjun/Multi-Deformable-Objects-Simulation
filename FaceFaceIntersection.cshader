@@ -580,14 +580,10 @@ void main() {
 
 	int faceIndex1 = int(BB1.x);
 	int faceIndex2 = int(BB2.x) + FaceOffset;
-    
-	if(MaskResult[bbindex1*64+bbindex2]!=1)
-	{
-		return;	
-	}	
-	float res = tri_tri_overlap_3D(FaceInformation[faceIndex1].xyz,FaceInformation[faceIndex2].xyz);   
+    	
+	if(MaskResult[bbindex1*64+bbindex2]!=1)	return;	
 	
-	FacePairwise[faceIndex1*obj2facecount+faceIndex2].z = res;
+	FacePairwise[faceIndex1*obj2facecount+faceIndex2].z = tri_tri_overlap_3D(FaceInformation[faceIndex1].xyz,FaceInformation[faceIndex2].xyz);   
 
 	PrevPositions[int(FaceInformation[faceIndex1].x)].w = 1.0;
     PrevPositions[int(FaceInformation[faceIndex1].y)].w = 1.0;
@@ -597,3 +593,4 @@ void main() {
     PrevPositions[int(FaceInformation[faceIndex2].y)].w = 1.0;
     PrevPositions[int(FaceInformation[faceIndex2].z)].w = 1.0;
 }
+

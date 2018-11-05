@@ -270,7 +270,7 @@ int main(void)
 			render->invoke_compute_shader();
 			render->invoke_updateBB_shader();
 			render->invoke_collisionBB_shader();
-			
+			render->invoke_collisionHandling_shader();
 		}
 			render->render();		
 	} //Check if the ESC key had been pressed or if the window had been closed

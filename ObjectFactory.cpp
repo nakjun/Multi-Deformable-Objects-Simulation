@@ -10,12 +10,16 @@
 #define alphaXEle "../models/alpha/X.ele"
 #define alphaLEle "../models/alpha/L5.ele"
 #define boxEle "../models/box/box.ele"
+#define bunnyEle "../models/bunny/bunny_741.ele"
+#define TorusEle "../models/torus/Torus.ele"
 
 #define sphereFace "../models/sphere/sphere.face"
 #define alphaFace "../models/alpha/A.face"
 #define alphaxFace "../models/alpha/X.face"
 #define alphaLFace "../models/alpha/L5.face"
 #define boxFace "../models/box/box.face"
+#define bunnyFace "../models/bunny/bunny_741.face"
+#define TorusFace "../models/torus/Torus.face"
 
 int ***Face;
 int **Matrix;
@@ -219,7 +223,7 @@ void CObjectFactory::FaceLoad(std::vector<ivec3> *v, std::string file)
 				fscanf(fp, "%d %d %d %d", &tmp, &temp.x, &temp.y, &temp.z);				
 			}
 				
-			if (!file.compare(boxFace) || !file.compare(sphereFace)){
+			if (!file.compare(boxFace) || !file.compare(sphereFace) || !file.compare(bunnyFace) || !file.compare(TorusFace)){
 
 			}
 			else if (!file.compare(alphaFace) || !file.compare(alphaLFace) || !file.compare(alphaxFace)){
@@ -260,7 +264,7 @@ void CObjectFactory::ElementLoad(std::vector<CSpring> *s, std::vector<ivec3> *f,
 			vertexIndex[2] = node[2];	//삼각형 중 정점2 위치
 			vertexIndex[3] = node[3];	//삼각형 중 정점2 위치
 		}
-		else if (!file.compare(sphereEle)){
+		else if (!file.compare(sphereEle) || !file.compare(bunnyEle) || !file.compare(TorusEle)){
 			vertexIndex[0] = node[0];
 			vertexIndex[1] = node[1];	//삼각형 중 정점1 위치
 			vertexIndex[2] = node[2];	//삼각형 중 정점2 위치

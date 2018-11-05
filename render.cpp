@@ -12,7 +12,9 @@ using namespace std;
 #define BBCOUNT 64
 
 vec3 lightPos = vec3(0.0f, 15.0f, 1.0f);
+vec3 external_Force = vec3(9.8f, 0.0f, 0.0f);
 int faceCount2;
+int currentCNT = 0;
 struct vertex4f {
 	GLfloat x, y, z;
 	GLfloat index;
@@ -113,63 +115,41 @@ void CRender::generateMVPMatrix()
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &Projection[0][0]);
 }
 
-void CRender::invoke_compute_shader(){
+// CALL UPDATE BOUNDING BOX COMPUTE SHADER
+void CRender::invoke_updateBB_shader(){
 	
-	glUseProgram(compute_program_handle[1]);
+	// BB_program_handle[1] : BBUpdate.cshader	
 	
-	workingGroups = spring_count / 512;
-	uniform_loc = glGetUniformLocation(compute_program_handle[1], "VertexCount");
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, VerticesCount);
-	}
-	uniform_loc = glGetUniformLocation(compute_program_handle[1], "SpringCount");
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, spring_count);
-	}
-	glDispatchCompute(workingGroups + 1, 1, 1);
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
-	
-	//Node Shader Use and Node Pos Update(Using Numerical Integration)
-	glUseProgram(compute_program_handle[2]);
-	uniform_loc = glGetUniformLocation(compute_program_handle[2], "VertexCount");
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, VerticesCount);
-	}
+	glUseProgram(BB_program_handle[1]);
 
-	uniform_loc = glGetUniformLocation(compute_program_handle[2], "ObjectCount");
+	uniform_loc = glGetUniformLocation(BB_program_handle[1], "ObjectCount");
+	workingGroups = BBCOUNT * ObjectCount / 32;
 	if (uniform_loc != unsigned int(-1))
 	{
-		glUniform1i(uniform_loc, ObjectCount);
+		glUniform1i(uniform_loc, BBCOUNT);
 	}
+	uniform_loc = glGetUniformLocation(BB_program_handle[1], "FaceListOffset");
 
-	workingGroups = VerticesCount / 512;
-	glDispatchCompute(workingGroups + 1, 1, 1);
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
-	
-	//Node Shader Use and Node Pos Update(Using Numerical Integration)
-	glUseProgram(compute_program_handle[0]);
-	uniform_loc = glGetUniformLocation(compute_program_handle[0], "VertexCount");
 	if (uniform_loc != unsigned int(-1))
 	{
-		glUniform1i(uniform_loc, VerticesCount);
+		glUniform1i(uniform_loc, mDefList.at(0)->sum);
 	}
+	uniform_loc = glGetUniformLocation(BB_program_handle[1], "FaceOffset");
 
-	uniform_loc = glGetUniformLocation(compute_program_handle[0], "ObjectCount");
 	if (uniform_loc != unsigned int(-1))
 	{
-		glUniform1i(uniform_loc, ObjectCount);
+		glUniform1i(uniform_loc, fCountList.at(0));
 	}
-
-	workingGroups = VerticesCount / 512;
-	glDispatchCompute(workingGroups + 1, 1, 1);
+	glDispatchCompute(workingGroups, 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
 }
 
+// CALL BOUNDING BOX COLLISION and FACE-FACE INTERSECTION COMPUTE SHADER
 void CRender::invoke_collisionBB_shader()
 {
+	// BB_program_handle[0] : BBCollision.cshader
+	// BB_program_handle[2] : FaceFaceIntersection.cshader
+
 	glUseProgram(BB_program_handle[0]);
 
 	uniform_loc = glGetUniformLocation(BB_program_handle[0], "BBCount");
@@ -216,44 +196,48 @@ void CRender::invoke_collisionBB_shader()
 		glUniform1i(uniform_loc, faceCount2);
 	}
 
-	workingGroups = mDefList.at(0)->sum / 32;
+	int workingGroups = mDefList.at(0)->sum / 32;
+	int workingGroups2 = mDefList.at(1)->sum / 32;
+	glDispatchCompute(workingGroups + 1, workingGroups2 + 1, 1);
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge	
+}
+
+void CRender::invoke_collisionHandling_shader()
+{	
+	// Calculate Reflecting Velocity : N' * M' Invoke
+	glUseProgram(CH_program_handle[1]);
+	uniform_loc = glGetUniformLocation(CH_program_handle[1], "Offset");
+
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, mDefList.at(0)->sum);
+	}
+	uniform_loc = glGetUniformLocation(CH_program_handle[1], "FaceOffset");
+
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, fCountList.at(0));
+	}
+	uniform_loc = glGetUniformLocation(CH_program_handle[1], "obj2facecount");
+
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, faceCount2);
+	}
+	int workingGroups = mDefList.at(0)->sum / 32;
 	int workingGroups2 = mDefList.at(1)->sum / 32;
 	glDispatchCompute(workingGroups + 1, workingGroups2 + 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge	
 
-	//// Face-Face Collision Response : N' * M' Invoke
-	//glUseProgram(BB_program_handle[3]);
-	//uniform_loc = glGetUniformLocation(BB_program_handle[3], "Offset");
-
-	//if (uniform_loc != unsigned int(-1))
-	//{
-	//	glUniform1i(uniform_loc, mDefList.at(0)->sum);
-	//}
-	//uniform_loc = glGetUniformLocation(BB_program_handle[3], "FaceOffset");
-
-	//if (uniform_loc != unsigned int(-1))
-	//{
-	//	glUniform1i(uniform_loc, fCountList.at(0));
-	//}
-	//uniform_loc = glGetUniformLocation(BB_program_handle[2], "obj2facecount");
-
-	//if (uniform_loc != unsigned int(-1))
-	//{
-	//	glUniform1i(uniform_loc, faceCount2);
-	//}
-	//workingGroups = mDefList.at(0)->sum / 32;
-	//workingGroups2 = mDefList.at(1)->sum / 32;
-	//glDispatchCompute(workingGroups + 1, workingGroups2 + 1, 1);
-	//glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge	
-
-	glUseProgram(BB_program_handle[3]);
-	uniform_loc = glGetUniformLocation(BB_program_handle[3], "VertexCount");
+	// Back Positioning
+	glUseProgram(CH_program_handle[0]);
+	uniform_loc = glGetUniformLocation(CH_program_handle[0], "VertexCount");
 	if (uniform_loc != unsigned int(-1))
 	{
 		glUniform1i(uniform_loc, VerticesCount);
 	}
 
-	uniform_loc = glGetUniformLocation(BB_program_handle[3], "ObjectCount");
+	uniform_loc = glGetUniformLocation(CH_program_handle[0], "ObjectCount");
 	if (uniform_loc != unsigned int(-1))
 	{
 		glUniform1i(uniform_loc, ObjectCount);
@@ -264,29 +248,73 @@ void CRender::invoke_collisionBB_shader()
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
 }
 
-void CRender::invoke_updateBB_shader(){
-	glUseProgram(BB_program_handle[1]);
 
-	uniform_loc = glGetUniformLocation(BB_program_handle[1], "ObjectCount");
-	workingGroups = BBCOUNT * ObjectCount / 32;
+void CRender::invoke_compute_shader(){
+	//Spring Force Update by Hook's Raw
+	glUseProgram(compute_program_handle[1]);
+
+	workingGroups = spring_count / 512;
+	uniform_loc = glGetUniformLocation(compute_program_handle[1], "VertexCount");
 	if (uniform_loc != unsigned int(-1))
 	{
-		glUniform1i(uniform_loc, BBCOUNT);
+		glUniform1i(uniform_loc, VerticesCount);
 	}
-	uniform_loc = glGetUniformLocation(BB_program_handle[1], "FaceListOffset");
-
+	uniform_loc = glGetUniformLocation(compute_program_handle[1], "SpringCount");
 	if (uniform_loc != unsigned int(-1))
 	{
-		glUniform1i(uniform_loc, mDefList.at(0)->sum);
+		glUniform1i(uniform_loc, spring_count);
 	}
-	uniform_loc = glGetUniformLocation(BB_program_handle[1], "FaceOffset");
-
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, fCountList.at(0));
-	}
-	glDispatchCompute(workingGroups, 1, 1);
+	glDispatchCompute(workingGroups + 1, 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
+
+	//Node Force Summation
+	glUseProgram(compute_program_handle[2]);
+	uniform_loc = glGetUniformLocation(compute_program_handle[2], "VertexCount");
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, VerticesCount);
+	}
+
+	uniform_loc = glGetUniformLocation(compute_program_handle[2], "ObjectCount");
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, ObjectCount);
+	}
+
+	workingGroups = VerticesCount / 512;
+	glDispatchCompute(workingGroups + 1, 1, 1);
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
+
+	//Node Shader Use and Node Pos Update(Using Numerical Integration)
+	glUseProgram(compute_program_handle[0]);
+	uniform_loc = glGetUniformLocation(compute_program_handle[0], "VertexCount");
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, VerticesCount);
+	}
+
+	uniform_loc = glGetUniformLocation(compute_program_handle[0], "ObjectCount");
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, ObjectCount);
+	}
+
+
+	uniform_loc = glGetUniformLocation(compute_program_handle[0], "extForce");
+	if (uniform_loc != unsigned int(-1))
+	{
+		if (currentCNT>400)
+			glUniform1f(uniform_loc, 1.0f);
+		else
+			glUniform1f(uniform_loc, 0.0f);
+	}
+
+
+	workingGroups = VerticesCount / 512;
+	glDispatchCompute(workingGroups + 1, 1, 1);
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
+
+	currentCNT++;
 }
 
 void CRender::render()
@@ -381,7 +409,7 @@ void CRender::generateShaders(){
 	glDeleteShader(vertex_shader_handle);
 	glDeleteShader(fragment_shader_handle);
 
-	uint32_t compute_shader_handle = compileShader("node.cshader", GL_COMPUTE_SHADER);
+	compute_shader_handle = compileShader("node.cshader", GL_COMPUTE_SHADER);
 	compute_program_handle[0] = glCreateProgram();
 	glAttachShader(compute_program_handle[0], compute_shader_handle);
 	glLinkProgram(compute_program_handle[0]);
@@ -403,7 +431,7 @@ void CRender::generateShaders(){
 	glDeleteShader(compute_shader_handle);
 
 	//BoundingBox Collision CS
-	uint32_t BB_compute_shader_handle = compileShader("BBCollision.cshader", GL_COMPUTE_SHADER);
+	BB_compute_shader_handle = compileShader("BBCollision.cshader", GL_COMPUTE_SHADER);
 	BB_program_handle[0] = glCreateProgram();
 	glAttachShader(BB_program_handle[0], BB_compute_shader_handle);
 	glLinkProgram(BB_program_handle[0]);
@@ -426,13 +454,21 @@ void CRender::generateShaders(){
 	printProgramLog(BB_program_handle[2]);
 	glDeleteShader(BB_compute_shader_handle);
 
-	//Collision Handling CS
-	BB_compute_shader_handle = compileShader("CollisionResponse.cshader", GL_COMPUTE_SHADER);
-	BB_program_handle[3] = glCreateProgram();
-	glAttachShader(BB_program_handle[3], BB_compute_shader_handle);
-	glLinkProgram(BB_program_handle[3]);
-	printProgramLog(BB_program_handle[3]);
-	glDeleteShader(BB_compute_shader_handle);
+	//Collision Handling CS : BackPositioning
+	CH_compute_shader_handle = compileShader("BackPosition.cshader", GL_COMPUTE_SHADER);
+	CH_program_handle[0] = glCreateProgram();
+	glAttachShader(CH_program_handle[0], CH_compute_shader_handle);
+	glLinkProgram(CH_program_handle[0]);
+	printProgramLog(CH_program_handle[0]);
+	glDeleteShader(CH_compute_shader_handle);
+
+	//Collision Handling CS : BackPositioning
+	CH_compute_shader_handle = compileShader("CollisionResponse.cshader", GL_COMPUTE_SHADER);
+	CH_program_handle[1] = glCreateProgram();
+	glAttachShader(CH_program_handle[1], CH_compute_shader_handle);
+	glLinkProgram(CH_program_handle[1]);
+	printProgramLog(CH_program_handle[1]);
+	glDeleteShader(CH_compute_shader_handle);
 
 }
 void CRender::generateBuffers(){
@@ -589,7 +625,7 @@ void CRender::generateBuffers(){
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 13, SSBOPrevVel);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-	/*if (glIsBuffer(SSBONodeFaceResponseTable)) {
+	if (glIsBuffer(SSBONodeFaceResponseTable)) {
 		glDeleteBuffers(1, &SSBONodeFaceResponseTable);
 	};
 	glGenBuffers(1, &SSBONodeFaceResponseTable);
@@ -597,7 +633,7 @@ void CRender::generateBuffers(){
 	glBufferData(GL_SHADER_STORAGE_BUFFER, VerticesCount * nodefacemaxSize * sizeof(vertex4f), NULL, GL_STATIC_DRAW);
 	resetNodeFaceResponseForceSSBO();
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, SSBONodeFaceResponseTable);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);*/
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 
 	// Allocation Node Position and Normal Buffer to VAO
@@ -622,10 +658,12 @@ void CRender::resetNodeFaceResponseForceSSBO()
 		NodeFaceResponse[i].x = 0.0;
 		NodeFaceResponse[i].y = 0.0;
 		NodeFaceResponse[i].z = 0.0;
-		NodeFaceResponse[i].index = 0.0;
+	 	NodeFaceResponse[i].index = 0.0;
 	}
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 }
+
+
 
 void CRender::resetPrevPositionSSBO()
 {

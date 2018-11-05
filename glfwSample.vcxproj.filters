@@ -139,5 +139,8 @@
     <None Include="CollisionResponse.cshader">
       <Filter>ComputeShader</Filter>
     </None>
+    <None Include="BackPosition.cshader">
+      <Filter>ComputeShader</Filter>
+    </None>
   </ItemGroup>
 </Project>

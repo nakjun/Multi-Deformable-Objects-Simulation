@@ -108,6 +108,7 @@
     <ClCompile Include="Spring.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="BackPosition.cshader" />
     <None Include="BBCollision.cshader" />
     <None Include="BBUpdate.cshader" />
     <None Include="BBvertex.shader" />

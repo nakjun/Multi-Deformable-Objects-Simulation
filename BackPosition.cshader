@@ -1,0 +1,43 @@
+#version 430
+
+// Target 0 : Vertex position
+layout(std430, binding = 0) buffer Pos {
+   vec4 Positions[];
+};
+
+// Target 12 : Previous Vertex position
+layout(std430, binding = 12) buffer PrevPos {
+   vec4 PrevPositions[];
+};
+
+// Target 1 : Vertex velocity
+layout(std430, binding = 1) buffer Vel {
+    vec4 Velocities[];
+};
+
+// Target 13 : Vertex Prev velocity
+layout(std430, binding = 1) buffer PrevVel {
+    vec4 PrevVelocities[];
+};
+
+layout (local_size_x = 512) in;
+
+uniform int VertexCount;
+
+void main() {
+
+	uint index = gl_GlobalInvocationID.x;
+	
+	if(index>=VertexCount) return;
+	
+	float iscollision = PrevPositions[index].w;
+
+	if(iscollision==0.0) return;
+	
+	//Reflect Vector Applying : ¹ÌÀû¿ë
+	Velocities[index].xyz *= -0.95;
+
+	Positions[index].x = PrevPositions[index].x;
+	
+	PrevPositions[index].w = 0.0;
+}

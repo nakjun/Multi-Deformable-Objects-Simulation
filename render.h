@@ -13,6 +13,7 @@ public:
 	void invoke_compute_shader();
 	void invoke_updateBB_shader();
 	void invoke_collisionBB_shader();
+	void invoke_collisionHandling_shader();
 
 	GLuint baseShader;
 	GLuint computeShader;
@@ -75,8 +76,13 @@ public:
 
 	//Shader Handler
 	uint32_t render_program_handle = 0;
+	uint32_t compute_shader_handle = 0;	
+	uint32_t BB_compute_shader_handle = 0;
+	uint32_t CH_compute_shader_handle = 0;
+
 	uint32_t compute_program_handle[3];
-	uint32_t BB_program_handle[4];
+	uint32_t BB_program_handle[3];
+	uint32_t CH_program_handle[2];
 
 	uint32_t particle_position_vao_handle = 0;
 	uint32_t particle_buffer_handle = 0;

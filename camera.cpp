@@ -16,8 +16,8 @@ Camera::Camera(void)
 
 	//test
 	x = 0.0;
-	y = 5.0;
-	z = 9.5;
+	y = 20.0;
+	z = 20;
 	
 	position =
 		::vec3(x, y, z);
