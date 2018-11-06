@@ -36,6 +36,12 @@ layout(std430, binding =11)  buffer Mask{
 	int MaskResult[];
 };
 
+//Target 12 : Node-Face Relation Velocity Table
+layout(std430, binding =12)  buffer ReflectVelocity{
+	vec4 Reflect_Velocities[];
+};
+
+
 uniform int Offset;
 uniform int FaceOffset;
 uniform int obj2facecount;
@@ -96,5 +102,11 @@ void main() {
 	rv_f2[1] = 2 * dot(normDiff,f2_norm[1]) * normDiff - f2_norm[1];
 	rv_f2[2] = 2 * dot(normDiff,f2_norm[2]) * normDiff - f2_norm[2];
 
-	
+	Reflect_Velocities[int(Face_Information[faceIndex1].FaceNodeIndex.x)*int(Face_Information[faceIndex1].FaceNodeLocation.x)].xyz = rv_f1[0].xyz;
+	Reflect_Velocities[int(Face_Information[faceIndex1].FaceNodeIndex.y)*int(Face_Information[faceIndex1].FaceNodeLocation.y)].xyz = rv_f1[1].xyz;
+	Reflect_Velocities[int(Face_Information[faceIndex1].FaceNodeIndex.z)*int(Face_Information[faceIndex1].FaceNodeLocation.z)].xyz = rv_f1[2].xyz;
+
+	Reflect_Velocities[int(Face_Information[faceIndex2].FaceNodeIndex.x)*int(Face_Information[faceIndex2].FaceNodeLocation.x)].xyz = rv_f2[0].xyz;
+	Reflect_Velocities[int(Face_Information[faceIndex2].FaceNodeIndex.y)*int(Face_Information[faceIndex2].FaceNodeLocation.y)].xyz = rv_f2[1].xyz;
+	Reflect_Velocities[int(Face_Information[faceIndex2].FaceNodeIndex.z)*int(Face_Information[faceIndex2].FaceNodeLocation.z)].xyz = rv_f2[2].xyz;
 }
