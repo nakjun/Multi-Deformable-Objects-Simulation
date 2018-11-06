@@ -64,6 +64,7 @@ void CMassSpringSystem::DeleteAllData(){
 		mDynamic = NULL;
 
 		mFaceArray.clear();
+		mFaceArray2.clear();
 		fclose(mFILE);
 	}
 }

@@ -55,6 +55,7 @@ struct TwoFacesPair{
 float framenum = 0;
 
 vector<int> FACEARRAY;
+vector<int> FACEARRAY2;
 vector<ivec2> LINEARRAY;
 int facearray_count = 0;
 
@@ -328,9 +329,9 @@ void CRender::render()
 
 	glUseProgram(render_program_handle);
 	generateMVPMatrix();	
-	//glDrawElements(GL_LINES, FACEARRAY.size(), GL_UNSIGNED_INT, &FACEARRAY[0]);
+	//glDrawElements(GL_TRIANGLES, FACEARRAY.size(), GL_UNSIGNED_INT, &FACEARRAY[0]);
 	glDrawElements(GL_LINES, LINEARRAY.size() * 2, GL_UNSIGNED_INT, &LINEARRAY[0]);
-	
+
 	glfwSwapBuffers(Scenewindow);
 	fcnt++;
 
@@ -558,7 +559,7 @@ void CRender::generateBuffers(){
 	};
 	glGenBuffers(1, &SSBOFace);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOFace);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, FaceCount * sizeof(vertex4f), NULL, GL_STATIC_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, FaceCount * sizeof(mface), NULL, GL_STATIC_DRAW);
 	resetFaceSSBO();
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, SSBOFace);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -917,30 +918,76 @@ void CRender::resetSpringForceSSBO(){
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 	}
 }
-void CRender::resetFaceSSBO(){
+void CRender::resetFaceSSBO(){	
+	struct mface* faceBuff;
+	int curr = 0;
+	//int offset = 0;
+	int Offset = 0;
 	CDeformable *temp;
 	CMassSpringSystem *mTemp;
-	struct vertex4f* faceBuff = (struct vertex4f*) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, FACEARRAY.size() / 3 * sizeof(vertex4f), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-	int curr = 0;
-	int offset = 0;
-	for (int n = 0; n < mDefList.size(); n++){
+
+	for (int n = 0; n < ObjectCount; n++){
+		faceBuff = (struct mface*) (struct mface*) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, Offset, fCountList.at(n) * sizeof(mface), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+		Offset += fCountList.at(n) * sizeof(mface);
+
+		temp = mDefList.at(n);
+		mTemp = (*temp->curMSS);
+		for (int i = 0; i < fCountList.at(n); i++)
+		{
+			faceBuff[i].faceindex.x = mTemp->mFaceArray.at(i).x;
+			faceBuff[i].faceindex.y = mTemp->mFaceArray.at(i).y;
+			faceBuff[i].faceindex.z = mTemp->mFaceArray.at(i).z;
+			faceBuff[i].faceindex.index = (float)n;
+
+			faceBuff[i].nodefaceresponseindex.x = mTemp->mFaceArray2.at(i).x;
+			faceBuff[i].nodefaceresponseindex.y = mTemp->mFaceArray2.at(i).y;
+			faceBuff[i].nodefaceresponseindex.z = mTemp->mFaceArray2.at(i).z;
+			faceBuff[i].nodefaceresponseindex.index = (float)n;
+		}
+
+		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+	}
+
+
+	/*for (int n = 0; n < mDefList.size(); n++){
 		temp = mDefList.at(n);
 		mTemp = *temp->curMSS;
-	}
-	for (int n = 0; n < fCountList.size(); n++)
-	{
-		for (int i = offset; i < offset + fCountList.at(n); i++){
-			faceBuff[i].x = (float)FACEARRAY.at((3*i));
-			faceBuff[i].y = (float)FACEARRAY.at((3 * i) + 1);
-			faceBuff[i].z = (float)FACEARRAY.at((3 * i) + 2);
-			faceBuff[i].index = (float)n;
 
-			//faceBuff[i].nodefaceresponseindex.x = (float)FACEARRAY.at((3 * i)) * nodefacemaxSize + find()
+		for (int i = offset; i < mTemp->mFaceArray.size(); i++)
+		{
+			faceBuff[i].faceindex.x = mTemp->mFaceArray.at(curr).x;
+			faceBuff[i].faceindex.y = mTemp->mFaceArray.at(curr).y;
+			faceBuff[i].faceindex.z = mTemp->mFaceArray.at(curr).z;
+			faceBuff[i].faceindex.index = (float)n;
+
+			faceBuff[i].nodefaceresponseindex.x = mTemp->mFaceArray2.at(curr).x;
+			faceBuff[i].nodefaceresponseindex.y = mTemp->mFaceArray2.at(curr).y;
+			faceBuff[i].nodefaceresponseindex.z = mTemp->mFaceArray2.at(curr).z;
+			faceBuff[i].nodefaceresponseindex.index = (float)n;
+
+			curr++;
 		}
-		offset += fCountList.at(n);
-	}
+		offset += mTemp->mFaceArray.size();
+		curr = 0;
+	}*/
+
+	//for (int n = 0; n < fCountList.size(); n++)
+	//{
+	//	for (int i = offset; i < offset + fCountList.at(n); i++){
+	//		/*faceBuff[i].faceindex.x = (float)FACEARRAY.at((3*i));
+	//		faceBuff[i].faceindex.y = (float)FACEARRAY.at((3 * i) + 1);
+	//		faceBuff[i].faceindex.z = (float)FACEARRAY.at((3 * i) + 2);
+	//		faceBuff[i].faceindex.index = (float)n;
+
+	//		faceBuff[i].nodefaceresponseindex.x = (float)FACEARRAY2.at((3 * i));
+	//		faceBuff[i].nodefaceresponseindex.y = (float)FACEARRAY2.at((3 * i) + 1);
+	//		faceBuff[i].nodefaceresponseindex.z = (float)FACEARRAY2.at((3 * i) + 2);
+	//		faceBuff[i].nodefaceresponseindex.index = (float)n;*/
+	//	}
+	//	
+	//}
 	
-	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+	//glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 	printf("face ssbo setup end\n");
 }
 
@@ -970,13 +1017,13 @@ void CRender::setLineArray()
 
 		for (int i = 0; i < size; i++)
 		{
-			ivec3 faceTmp = mTemp->mFaceArray.at(i);
+			ivec3 faceTmp = mTemp->mFaceArray.at(i);			
 			ivec2 arrayTmp[3];
 
 			arrayTmp[0] = ivec2(faceTmp.x + vSize, faceTmp.y + vSize);
 			arrayTmp[1] = ivec2(faceTmp.x + vSize, faceTmp.z + vSize);
 			arrayTmp[2] = ivec2(faceTmp.y + vSize, faceTmp.z + vSize);
-			
+
 			LINEARRAY.push_back(arrayTmp[0]);
 			LINEARRAY.push_back(arrayTmp[1]);
 			LINEARRAY.push_back(arrayTmp[2]);
@@ -1012,7 +1059,7 @@ void CRender::SetFaceList(){
 	fCountList.clear();
 	FaceCount = 0;
 	FACEARRAY.clear();
-
+	FACEARRAY2.clear();
 	int vSize = 0;
 	for (int n = 0; n < mDefList.size(); n++){
 		temp = mDefList.at(n);
@@ -1022,42 +1069,28 @@ void CRender::SetFaceList(){
 		fCountList.push_back(size);
 		for (int i = 0; i < size; i++){
 			ivec3 arrayTmp = temp->mSrpingSystem->mFaceArray.at(i);
+			ivec3 arrayTmp2 = temp->mSrpingSystem->mFaceArray2.at(i);
 			if (n == 0){
 				FACEARRAY.push_back(arrayTmp.x);
 				FACEARRAY.push_back(arrayTmp.y);
 				FACEARRAY.push_back(arrayTmp.z);
+
+				FACEARRAY2.push_back(arrayTmp2.x);
+				FACEARRAY2.push_back(arrayTmp2.y);
+				FACEARRAY2.push_back(arrayTmp2.z);
 			}
 			else if (n>0){
-				//FACEARRAY.push_back(ivec3(arrayTmp.x + vSize, arrayTmp.y + vSize, arrayTmp.z + vSize));
-
-				FACEARRAY.push_back(arrayTmp.x+vSize);
+				FACEARRAY.push_back(arrayTmp.x + vSize);
 				FACEARRAY.push_back(arrayTmp.y + vSize);
-				FACEARRAY.push_back(arrayTmp.z+vSize);
-			}
-		}
-		vSize += vCountList.at(n);
-	}
+				FACEARRAY.push_back(arrayTmp.z + vSize);
 
-	/*
-	int vSize = 0;
-	for (int n = 0; n < mDefList.size(); n++){
-		temp = mDefList.at(n);
-		mTemp = *temp->curMSS;
-		int size = mTemp->mFaceArray.size();
-		FaceCount += size;
-		fCountList.push_back(size);
-		for (int i = 0; i < size; i++){
-			ivec3 arrayTmp = temp->mSrpingSystem->mFaceArray.at(i);
-			if (n == 0){
-				FACEARRAY.push_back(arrayTmp);
-			}
-			else if (n>0){
-				FACEARRAY.push_back(ivec3(arrayTmp.x + vSize, arrayTmp.y + vSize, arrayTmp.z + vSize));
+				FACEARRAY2.push_back(arrayTmp2.x);
+				FACEARRAY2.push_back(arrayTmp2.y);
+				FACEARRAY2.push_back(arrayTmp2.z);
 			}
 		}
 		vSize += vCountList.at(n);
 	}
-	*/
 }
 void CRender::resetBoundingBoxResultSSBO(){
 	struct vertex4f* ObjectBB = (struct vertex4f*) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 64 * 64 * sizeof(vertex4f), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);

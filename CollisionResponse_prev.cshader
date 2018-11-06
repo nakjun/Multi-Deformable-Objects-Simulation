@@ -3,7 +3,11 @@ layout( local_size_x = 32, local_size_y = 32) in;
 layout(std430, binding=0) buffer PosIn {
   vec4 PositionIn[];
 };
-
+struct FaceInformation
+{
+	vec4 FaceNodeIndex;
+	vec4 FaceNodeLocation;
+};
 // Target 12 : Previous Vertex position
 layout(std430, binding = 12) buffer PrevPos {
    vec4 PrevPositions[];
@@ -20,7 +24,7 @@ layout(std430, binding = 6) buffer NormalB {
 };
 
 layout(std430, binding=7) buffer FaceInfor {
-  vec4 FaceInformation[];
+  FaceInformation Face_Information[];
 };
 
 // Target 9 : Bounding Box Face Information

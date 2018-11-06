@@ -39,7 +39,7 @@ void main() {
 	if(index>=SpringCount) return;
 
 	float ks = 50000.0;
-	float kd = 0.005;
+	float kd = 0.0001;
 
 	vec3 information = SP[index].SP_INFOR.xyz;
 	vec3 spIndex = SP[index].SP_INDEX.xyz;

@@ -55,5 +55,6 @@ public:
 	bool *mDynamic;
 
 	vector<ivec3> mFaceArray;
+	vector<ivec3> mFaceArray2;
 };
 

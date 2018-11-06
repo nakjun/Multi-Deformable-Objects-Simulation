@@ -7,6 +7,12 @@ struct BoundingBox
    vec4 data;  
 };
 
+struct FaceInformation
+{
+	vec4 FaceNodeIndex;
+	vec4 FaceNodeLocation;
+};
+
 // Target 0 : Vertex position
 layout(std430, binding = 0) buffer Pos {
    vec4 Positions[];
@@ -24,7 +30,7 @@ layout(std430, binding =5)  buffer Res{
 
 //Target 7 : Face INformation
 layout(std430, binding =7)  buffer FACE{
-	vec4 Face_Information[];
+	FaceInformation Face_Information[];	
 };
 
 
@@ -68,7 +74,7 @@ void main() {
 	
 	int FirstIndex = int(BBFaceList[nowoffset].x) + nowfaceOffset;
 	BB_INFOR1[index].data.y = float(FirstIndex);
-	vec4 FirstFaceNodeData = Face_Information[FirstIndex];
+	vec4 FirstFaceNodeData = Face_Information[FirstIndex].FaceNodeIndex;
 
 	//첫번째 페이스정보를 통한 더미데이터 생성
 	min.xyz = Positions[int(FirstFaceNodeData.x)].xyz;
@@ -79,7 +85,7 @@ void main() {
 	for(int i=nowoffset;i<nowoffset+nowfaceCount;i++)
 	{	
 		int nIndex = int(BBFaceList[i].x) + nowfaceOffset;
-		vec4 FaceNodeData = Face_Information[nIndex];
+		vec4 FaceNodeData = Face_Information[nIndex].FaceNodeIndex;
 			
 		nodetempindex[0] = int(FaceNodeData.x);
 		nodetempindex[1] = int(FaceNodeData.y);

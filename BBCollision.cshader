@@ -7,6 +7,12 @@ struct BoundingBox
    vec4 data;   
 };
 
+struct FaceInformation
+{
+	vec4 FaceNodeIndex;
+	vec4 FaceNodeLocation;
+};
+
 // Target 4 : Bounding Box Information
 layout(std430, binding = 4) buffer BBInfor {
     BoundingBox BB_INFOR1[]; 
@@ -34,7 +40,7 @@ layout(std430, binding =11)  buffer Mask{
 
 //Target 7 : Face INformation
 layout(std430, binding =7)  buffer FACE{
-	vec4 Face_Information[];
+	FaceInformation Face_Information[];	
 };
 
 // Target 9 : Bounding Box Face Information

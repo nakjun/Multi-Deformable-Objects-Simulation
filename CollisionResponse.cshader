@@ -2,6 +2,12 @@
 
 layout( local_size_x = 32, local_size_y = 32) in;
 
+struct FaceInformation
+{
+	vec4 FaceNodeIndex;
+	vec4 FaceNodeLocation;
+};
+
 // Target 0 : Vertex position
 layout(std430, binding=0) buffer PosIn {
   vec4 PositionIn[];
@@ -13,7 +19,7 @@ layout(std430, binding = 1) buffer Vel {
 };
 
 layout(std430, binding=7) buffer FaceInfor {
-  vec4 FaceInformation[];
+  FaceInformation Face_Information[];  
 };
 
 // Target 9 : Bounding Box Face Information
@@ -61,8 +67,8 @@ void main() {
 	
 	FacePairwise[faceIndex1*obj2facecount+faceIndex2].z = 0.0;
 
-	vec3 faceA = FaceInformation[faceIndex1].xyz;
-	vec3 faceB = FaceInformation[faceIndex2].xyz;
+	vec3 faceA = Face_Information[faceIndex1].FaceNodeIndex.xyz;
+	vec3 faceB = Face_Information[faceIndex2].FaceNodeIndex.xyz;
 
 	f1_norm[0] = normalize(Velocities[int(faceA.x)].xyz);
 	f1_norm[1] = normalize(Velocities[int(faceA.y)].xyz);

@@ -7,6 +7,11 @@ struct BoundingBox
    vec4 Max;   
    vec4 data;   
 };
+struct FaceInformation
+{
+	vec4 FaceNodeIndex;
+	vec4 FaceNodeLocation;
+};
 
 layout(std430, binding=0) buffer PosIn {
   vec4 PositionIn[];
@@ -28,7 +33,7 @@ layout(std430, binding = 6) buffer NormalB {
 };
 
 layout(std430, binding=7) buffer FaceInfor {
-  vec4 FaceInformation[];
+  FaceInformation Face_Information[];	
 };
 
 // Target 9 : Bounding Box Face Information
@@ -583,14 +588,14 @@ void main() {
     	
 	if(MaskResult[bbindex1*64+bbindex2]!=1)	return;	
 	
-	FacePairwise[faceIndex1*obj2facecount+faceIndex2].z = tri_tri_overlap_3D(FaceInformation[faceIndex1].xyz,FaceInformation[faceIndex2].xyz);   
+	FacePairwise[faceIndex1*obj2facecount+faceIndex2].z = tri_tri_overlap_3D(Face_Information[faceIndex1].FaceNodeIndex.xyz,Face_Information[faceIndex2].FaceNodeIndex.xyz);   
 
-	PrevPositions[int(FaceInformation[faceIndex1].x)].w = 1.0;
-    PrevPositions[int(FaceInformation[faceIndex1].y)].w = 1.0;
-    PrevPositions[int(FaceInformation[faceIndex1].z)].w = 1.0;
+	PrevPositions[int(Face_Information[faceIndex1].FaceNodeIndex.x)].w = 1.0;
+    PrevPositions[int(Face_Information[faceIndex1].FaceNodeIndex.y)].w = 1.0;
+    PrevPositions[int(Face_Information[faceIndex1].FaceNodeIndex.z)].w = 1.0;
       
-    PrevPositions[int(FaceInformation[faceIndex2].x)].w = 1.0;
-    PrevPositions[int(FaceInformation[faceIndex2].y)].w = 1.0;
-    PrevPositions[int(FaceInformation[faceIndex2].z)].w = 1.0;
+    PrevPositions[int(Face_Information[faceIndex2].FaceNodeIndex.x)].w = 1.0;
+    PrevPositions[int(Face_Information[faceIndex2].FaceNodeIndex.y)].w = 1.0;
+    PrevPositions[int(Face_Information[faceIndex2].FaceNodeIndex.z)].w = 1.0;
 }
 

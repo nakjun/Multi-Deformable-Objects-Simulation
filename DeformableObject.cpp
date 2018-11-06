@@ -36,9 +36,12 @@ CDeformable::CDeformable(int number)
 		mTick = 0.001;		
 		CObjectFactory *of = new CObjectFactory();
 
+		float X_POS = rand() % 30 - 20.0;
+		float Y_POS = rand() % 20 + 5.0;
+
 		mSrpingSystem = new CMassSpringSystem(INTEGRATION_METHOD::SEMI_EULER);
 		//mss	   ks  kd    mass      position	  model_name
-		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(3.45, 3.8, 0.0), torus);
+		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(X_POS, Y_POS, 0.0), bunny);
 
 		mMSSList.push_back(mSrpingSystem);
 
@@ -52,7 +55,7 @@ CDeformable::CDeformable(int number)
 
 		mSrpingSystem = new CMassSpringSystem(INTEGRATION_METHOD::SEMI_EULER);
 		//mss	   ks  kd    mass      position	  model_name
-		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(-2.7, 2.0, 0), torus);
+		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(-2.7, 15.0, 0), bunny);
 
 		mMSSList.push_back(mSrpingSystem);
 
@@ -61,28 +64,29 @@ CDeformable::CDeformable(int number)
 		delete of;
 	}
 	
+	(*curMSS)->mFaceArray2.clear();
+
 	ivec3 facearr;
+	ivec3 facearr2;
 	for (int i = 0; i < (*curMSS)->mFaceArray.size(); i++)
 	{
 		facearr = (*curMSS)->mFaceArray.at(i);
 		(*curMSS)->mParticleArray[facearr.x].facelist->push_back(ivec2(i, 0));
+		facearr2.x = (*curMSS)->mParticleArray[facearr.x].facelist->size();
 		(*curMSS)->mParticleArray[facearr.y].facelist->push_back(ivec2(i, 0));
+		facearr2.y = (*curMSS)->mParticleArray[facearr.y].facelist->size();
 		(*curMSS)->mParticleArray[facearr.z].facelist->push_back(ivec2(i, 0));
+		facearr2.z = (*curMSS)->mParticleArray[facearr.z].facelist->size();
+
+		(*curMSS)->mFaceArray2.push_back(facearr2);
+		
 		if (maxFaceListSize < (*curMSS)->mParticleArray[facearr.x].facelist->size()) maxFaceListSize = (*curMSS)->mParticleArray[facearr.x].facelist->size();
 		if (maxFaceListSize < (*curMSS)->mParticleArray[facearr.y].facelist->size()) maxFaceListSize = (*curMSS)->mParticleArray[facearr.y].facelist->size();
 		if (maxFaceListSize < (*curMSS)->mParticleArray[facearr.z].facelist->size()) maxFaceListSize = (*curMSS)->mParticleArray[facearr.z].facelist->size();
+
 	}
 
 	printf("max : %d", maxFaceListSize);
-
-	/*for (int i = 0; i < (*curMSS)->GetNumParticles(); i++)
-	{
-		CParticle temp = (*curMSS)->mParticleArray[i];
-		for (int j = 0; j < temp.facelist->size(); i++)
-		{
-			
-		}
-	}*/
 
 	Box = new CBox();
 	springinformationTable = (int **)malloc((*curMSS)->GetNumParticles()*sizeof(int));	

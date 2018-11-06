@@ -80,8 +80,7 @@ void main() {
 	//gravity.x *= float(extForce);
 	
 	int obj = int(Positions[index].w);
-	//if(obj==1) return;
-
+	
 	// Node에 적용되는 Spring Force 불러오기
 	vec3 Force = Node_Force[index * 30 + 30].xyz;
 		
@@ -94,7 +93,7 @@ void main() {
 	if(vPos.y<-1.0000)
 	{     
 		vec3 v = vVel.xyz;
-		v.y *= -0.375;
+		v.y *= -0.005;
 		vVel.xyz = v;
 
 		vec3 p1 = vPos.xyz;

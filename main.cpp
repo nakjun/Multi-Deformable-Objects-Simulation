@@ -45,31 +45,32 @@ void init()
 	render->ObjectCount++;
 	render->vCountList.push_back(v_cnt);
 	render->sCountList.push_back(obj->mSrpingSystem->mNumSprings);	
-	
-	
-	obj = new CDeformable(1);
-	v_cnt = (*obj->curMSS)->GetNumParticles();
-	if (max < obj->maxFaceListSize)
+		
+	for (int i = 0; i < 3; i++)
 	{
-		max = obj->maxFaceListSize;
+		obj = new CDeformable(1);
+		v_cnt = (*obj->curMSS)->GetNumParticles();
+		if (max < obj->maxFaceListSize)
+		{
+			max = obj->maxFaceListSize;
+		}
+
+		render->nodefacemaxSize = max;
+
+		printf("max is %d\n", render->nodefacemaxSize);
+
+		obj->SetBoundingBox(render->VerticesCount);
+		obj->setFaceList();
+		render->mDefList.push_back(obj);
+		ttt = obj->sum;
+		render->BBFaceCount += ttt;
+		printf("%d\n", render->BBFaceCount);
+		render->VerticesCount += v_cnt;
+		render->spring_count += obj->mSrpingSystem->mNumSprings;
+		render->ObjectCount++;
+		render->vCountList.push_back(v_cnt);
+		render->sCountList.push_back(obj->mSrpingSystem->mNumSprings);
 	}
-
-	render->nodefacemaxSize = max;
-
-	printf("max is %d\n", render->nodefacemaxSize);
-
-	obj->SetBoundingBox(render->VerticesCount);
-	obj->setFaceList();
-	render->mDefList.push_back(obj);	
-    ttt = obj->sum;	
-	render->BBFaceCount += ttt;
-	printf("%d\n", render->BBFaceCount);
-	render->VerticesCount += v_cnt;
-	render->spring_count += obj->mSrpingSystem->mNumSprings;
-	render->ObjectCount++;
-	render->vCountList.push_back(v_cnt);
-	render->sCountList.push_back(obj->mSrpingSystem->mNumSprings);
-	
 }
 
 static void error_callback(int error, const char* description)
@@ -268,9 +269,9 @@ int main(void)
 		if (flag)
 		{
 			render->invoke_compute_shader();
-			render->invoke_updateBB_shader();
-			render->invoke_collisionBB_shader();
-			render->invoke_collisionHandling_shader();
+			//render->invoke_updateBB_shader();
+			//render->invoke_collisionBB_shader();
+			//render->invoke_collisionHandling_shader();
 		}
 			render->render();		
 	} //Check if the ESC key had been pressed or if the window had been closed
