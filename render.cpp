@@ -633,7 +633,7 @@ void CRender::generateBuffers(){
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBONodeFaceResponseTable);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, VerticesCount * nodefacemaxSize * sizeof(vertex4f), NULL, GL_STATIC_DRAW);
 	resetNodeFaceResponseForceSSBO();
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, SSBONodeFaceResponseTable);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 14, SSBONodeFaceResponseTable);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 
