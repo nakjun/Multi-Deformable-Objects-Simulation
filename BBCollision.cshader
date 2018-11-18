@@ -64,19 +64,30 @@ layout (local_size_x = 32, local_size_y = 32) in;
 void main()
 {	
 	uint index1= gl_GlobalInvocationID.x;
-	uint index2= gl_GlobalInvocationID.y+64;
-		
-	int offset1 = int(BB_INFOR1[index1].data.z);
-	int offset2 = int(BB_INFOR1[index2].data.z)+FaceOffset;
+	uint index2= gl_GlobalInvocationID.y;		
 	
+	//BB가 소속된 OBJECT의 INDEX를 가져옴
+	int BBINDEX1 = int(BB_INFOR1[index1].data.x);
+	int BBINDEX2 = int(BB_INFOR1[index2].data.x);
+
+	//BB가 소속된 INDEX가 같을 경우 쓰레드 종료
+	if(BBINDEX1==BBINDEX2) return;
+
+	//INVOKE된 BB1의 INDEX가 BB2보다 작을 경우 쓰레드 종료(절반만 수행하도록 설정)
+	if(index1<index2) return;
+
+	//BB가 가지고있는 FACE의 갯수를 가져옴
 	int nowfaceCount1 = int(BB_INFOR1[index1].data.w);
 	int nowfaceCount2 = int(BB_INFOR1[index2].data.w);
-	
+		
+	//BB간 충돌 결과를 저장할 MASK를 초기화함(-1)
 	MaskResult[index1*64+(index2-64)] = -1;
 
-	if(nowfaceCount1==0 || nowfaceCount2==0) return;	
+	if(nowfaceCount1==0 || nowfaceCount2==0) return;
 
+	//충돌 검사 수행 및 결과 저장
 	float res = check(BB_INFOR1[index1].Min.xyz,BB_INFOR1[index2].Min.xyz,BB_INFOR1[index1].Max.xyz,BB_INFOR1[index2].Max.xyz);		
 	
-	MaskResult[index1*64+(index2-64)] = int(res);
+	//MASKRESULT SSBO에 결과 값 저장
+	MaskResult[(64*BBINDEX1)+index1+(64*BBINDEX2)+index2] = int(res);
 }

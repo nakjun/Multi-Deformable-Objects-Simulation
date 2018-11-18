@@ -151,7 +151,14 @@ void CRender::invoke_collisionBB_shader()
 	// BB_program_handle[0] : BBCollision.cshader
 	// BB_program_handle[2] : FaceFaceIntersection.cshader
 	
-	glUseProgram(BB_program_handle[0]);	
+	glUseProgram(BB_program_handle[0]);
+	
+	uniform_loc = glGetUniformLocation(BB_program_handle[0], "FaceOffset");
+
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, fCountList.at(0));
+	}
 	
 	workingGroups = BBCOUNT * ObjectCount / 32;
 
@@ -590,7 +597,7 @@ void CRender::generateBuffers(){
 	};
 	glGenBuffers(1, &SSBOMaskBoundingBox);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOMaskBoundingBox);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, 64 * 64 * sizeof(int), NULL, GL_STATIC_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, 64 * 64 * ObjectCount * ObjectCount * sizeof(int), NULL, GL_STATIC_DRAW);
 	resetMaskSSBO();
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, SSBOMaskBoundingBox);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -1124,9 +1131,9 @@ void CRender::setFacePair()
 
 void CRender::resetMaskSSBO()
 {
-	int* Mask = (int*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0,64 * 64 * sizeof(int), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+	int* Mask = (int*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 64 * 64 * ObjectCount * ObjectCount * sizeof(int), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
-	for (int i = 0; i < 64 * 64 ; i++){
+	for (int i = 0; i < 64 * 64 * ObjectCount * ObjectCount ; i++){
 		Mask[i] = -1.0;		
 	}
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
