@@ -142,5 +142,8 @@
     <None Include="BackPosition.cshader">
       <Filter>ComputeShader</Filter>
     </None>
+    <None Include="ReflectVelocity.cshader">
+      <Filter>ComputeShader</Filter>
+    </None>
   </ItemGroup>
 </Project>

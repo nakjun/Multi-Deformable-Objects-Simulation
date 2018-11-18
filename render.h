@@ -82,7 +82,7 @@ public:
 
 	uint32_t compute_program_handle[3];
 	uint32_t BB_program_handle[3];
-	uint32_t CH_program_handle[2];
+	uint32_t CH_program_handle[3];
 
 	uint32_t particle_position_vao_handle = 0;
 	uint32_t particle_buffer_handle = 0;

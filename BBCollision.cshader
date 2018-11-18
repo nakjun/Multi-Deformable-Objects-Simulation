@@ -56,7 +56,6 @@ float check(vec3 min1,vec3 min2,vec3 max1,vec3 max2){
 }
 
 uniform int BBCount;
-uniform int FaceListOffset;
 uniform int FaceOffset;
 //uniform int 
 

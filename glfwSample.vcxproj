@@ -122,6 +122,7 @@
     <None Include="node.cshader" />
     <None Include="NodeForce.cshader" />
     <None Include="Normal.cshader" />
+    <None Include="ReflectVelocity.cshader" />
     <None Include="spring.cshader" />
     <None Include="vertex.shader" />
   </ItemGroup>

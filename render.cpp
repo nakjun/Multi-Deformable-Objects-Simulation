@@ -150,30 +150,12 @@ void CRender::invoke_collisionBB_shader()
 {
 	// BB_program_handle[0] : BBCollision.cshader
 	// BB_program_handle[2] : FaceFaceIntersection.cshader
-
-	glUseProgram(BB_program_handle[0]);
-
-	uniform_loc = glGetUniformLocation(BB_program_handle[0], "BBCount");
 	
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, BBCOUNT);
-	}
-	uniform_loc = glGetUniformLocation(BB_program_handle[0], "FaceListOffset");
+	glUseProgram(BB_program_handle[0]);	
+	
+	workingGroups = BBCOUNT * ObjectCount / 32;
 
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, mDefList.at(0)->sum);
-	}
-	uniform_loc = glGetUniformLocation(BB_program_handle[0], "FaceOffset");
-
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, fCountList.at(0));
-	}
-
-
-	glDispatchCompute(2, 2, 1);
+	glDispatchCompute(workingGroups, workingGroups, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
 	
 	// Face-Face Intersection : N' * M' Invoke
@@ -228,7 +210,7 @@ void CRender::invoke_collisionHandling_shader()
 	int workingGroups = mDefList.at(0)->sum / 32;
 	int workingGroups2 = mDefList.at(1)->sum / 32;
 	glDispatchCompute(workingGroups + 1, workingGroups2 + 1, 1);
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge	
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
 
 	// Back Positioning
 	glUseProgram(CH_program_handle[0]);
@@ -463,7 +445,7 @@ void CRender::generateShaders(){
 	printProgramLog(CH_program_handle[0]);
 	glDeleteShader(CH_compute_shader_handle);
 
-	//Collision Handling CS : BackPositioning
+	//Collision Handling CS : Calculate Reflect Velocity
 	CH_compute_shader_handle = compileShader("CollisionResponse.cshader", GL_COMPUTE_SHADER);
 	CH_program_handle[1] = glCreateProgram();
 	glAttachShader(CH_program_handle[1], CH_compute_shader_handle);
@@ -471,6 +453,13 @@ void CRender::generateShaders(){
 	printProgramLog(CH_program_handle[1]);
 	glDeleteShader(CH_compute_shader_handle);
 
+	//Collision Handling CS : Summation Reflect Velocity
+	CH_compute_shader_handle = compileShader("ReflectVelocity.cshader", GL_COMPUTE_SHADER);
+	CH_program_handle[2] = glCreateProgram();
+	glAttachShader(CH_program_handle[2], CH_compute_shader_handle);
+	glLinkProgram(CH_program_handle[2]);
+	printProgramLog(CH_program_handle[2]);
+	glDeleteShader(CH_compute_shader_handle);
 }
 void CRender::generateBuffers(){
 	// 0 : Node Position, 1 : Node Velocity, 2 : Spring Information, 3 : Node Force, 4 : BBInformation, 5 : BBResult, 6 : Normal, 7 : Face Information

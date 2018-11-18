@@ -83,7 +83,7 @@ void main() {
 	//Offset ~ Offset+FaceCount 만큼 반복하며 Min, Max Vector를 계산함
 	int nodetempindex[3];
 	for(int i=nowoffset;i<nowoffset+nowfaceCount;i++)
-	{	
+	{
 		int nIndex = int(BBFaceList[i].x) + nowfaceOffset;
 		vec4 FaceNodeData = Face_Information[nIndex].FaceNodeIndex;
 			
