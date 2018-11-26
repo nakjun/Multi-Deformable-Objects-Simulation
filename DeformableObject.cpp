@@ -41,7 +41,7 @@ CDeformable::CDeformable(int number)
 
 		mSrpingSystem = new CMassSpringSystem(INTEGRATION_METHOD::SEMI_EULER);
 		//mss	   ks  kd    mass      position	  model_name
-		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(X_POS, Y_POS, 0.0), bunny);
+		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(X_POS, Y_POS, 0.0), torus);
 
 		mMSSList.push_back(mSrpingSystem);
 

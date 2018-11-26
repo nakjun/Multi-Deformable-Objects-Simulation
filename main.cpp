@@ -28,25 +28,12 @@ void init()
 	render->BBFaceCount = 0;
 	render->vCountList.clear();
 	render->sCountList.clear();	
-	
-	//sphere
-	obj = new CDeformable(2);
-	int v_cnt = (*obj->curMSS)->GetNumParticles();
-	obj->SetBoundingBox(render->VerticesCount);
-	obj->setFaceList();
-	//render->newFaceCount += obj->sum;	
-	render->mDefList.push_back(obj);	
-	int ttt = obj->sum;	
-	int max = obj->maxFaceListSize;
-	render->BBFaceCount += ttt;
-	printf("%d\n", render->BBFaceCount);
-	render->VerticesCount += v_cnt;
-	render->spring_count += obj->mSrpingSystem->mNumSprings;
-	render->ObjectCount++;
-	render->vCountList.push_back(v_cnt);
-	render->sCountList.push_back(obj->mSrpingSystem->mNumSprings);	
 		
-	for (int i = 0; i < 3; i++)
+	int v_cnt;	
+	int ttt = 0;	
+	int max = 0;		
+		
+	for (int i = 0; i < 2; i++)
 	{
 		obj = new CDeformable(1);
 		v_cnt = (*obj->curMSS)->GetNumParticles();
@@ -269,8 +256,8 @@ int main(void)
 		if (flag)
 		{
 			render->invoke_compute_shader();
-			//render->invoke_updateBB_shader();
-			//render->invoke_collisionBB_shader();
+			render->invoke_updateBB_shader();
+			render->invoke_collisionBB_shader();
 			//render->invoke_collisionHandling_shader();
 		}
 		render->render();		

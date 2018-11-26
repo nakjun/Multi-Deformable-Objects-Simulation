@@ -74,11 +74,7 @@ void main() {
 	// Prev Position, Prev Velocity 저장
 	PrevPositions[index].xyz = vPos;
 	PrevVelocities[index].xyz = vVel;
-	
-	//if(extForce==1.0) gravity.x = 0.0f;
-
-	//gravity.x *= float(extForce);
-	
+		
 	int obj = int(Positions[index].w);
 	
 	// Node에 적용되는 Spring Force 불러오기
@@ -93,15 +89,14 @@ void main() {
 	if(vPos.y<-1.0000)
 	{     
 		vec3 v = vVel.xyz;
-		v.y *= -0.005;
+		v.y *= -0.0005;
 		vVel.xyz = v;
 
 		vec3 p1 = vPos.xyz;
 		p1.y = -0.9999999;
 		vPos.xyz = p1;
 	}
-
-
+	
     //Status Update   
     Positions[index].xyz = vPos;   
     Velocities[index].xyz = vVel;	

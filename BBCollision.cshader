@@ -63,6 +63,7 @@ layout (local_size_x = 32, local_size_y = 32) in;
 
 void main()
 {	
+	//INVOKED BOUNDING BOX INDEX(x,y)
 	uint index1= gl_GlobalInvocationID.x;
 	uint index2= gl_GlobalInvocationID.y;		
 	
@@ -81,7 +82,7 @@ void main()
 	int nowfaceCount2 = int(BB_INFOR1[index2].data.w);
 		
 	//BB간 충돌 결과를 저장할 MASK를 초기화함(-1)
-	MaskResult[index1*64+(index2-64)] = -1;
+	MaskResult[(64*BBINDEX1)+index1+(64*BBINDEX2)+index2] = -1;
 
 	if(nowfaceCount1==0 || nowfaceCount2==0) return;
 

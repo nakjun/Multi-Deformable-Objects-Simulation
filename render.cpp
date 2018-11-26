@@ -189,7 +189,7 @@ void CRender::invoke_collisionBB_shader()
 	int workingGroups = mDefList.at(0)->sum / 32;
 	int workingGroups2 = mDefList.at(1)->sum / 32;
 	glDispatchCompute(workingGroups + 1, workingGroups2 + 1, 1);
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge	
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
 }
 
 void CRender::invoke_collisionHandling_shader()
@@ -1039,7 +1039,7 @@ void CRender::resetFaceListSSBO()
 		{
 			faceListBuff[offset + j].x = (float)DeformTemp->faceList->at(j).x;
 			faceListBuff[offset + j].y = (float)DeformTemp->faceList->at(j).y+(64*i);
-			faceListBuff[offset + j].z = -1.0;
+			faceListBuff[offset + j].z = (float)i;
 			faceListBuff[offset + j].index = -1.0;
 		}		
 		offset = offset + DeformTemp->faceList->size();

@@ -565,9 +565,7 @@ int tri_tri_overlap_3D(vec3 tri1,vec3 tri2 )
    }
 }
 
-uniform int Offset;
-uniform int FaceOffset;
-uniform int obj2facecount;
+uniform int WHOLE_FACECOUNT;
 
 vec3 color1 = vec3(1.0,1.0,0.9);
 vec3 color2 = vec3(1.0,1.0,1.0);
@@ -575,18 +573,23 @@ vec3 color2 = vec3(1.0,1.0,1.0);
 void main() {
   
 	uint idx_x = gl_GlobalInvocationID.x;  
-	uint idx_y = gl_GlobalInvocationID.y + Offset; 
+	uint idx_y = gl_GlobalInvocationID.y; 
     
 	vec4 BB1 = BBFaceList[idx_x];
 	vec4 BB2 = BBFaceList[idx_y];
+
+	//같은 OBJECT일 경우 RETURN
+	if(BB1.z==BB2.z) return;
 
 	int bbindex1 = int(BB1.y);
 	int bbindex2 = int(BB2.y);
 
 	int faceIndex1 = int(BB1.x);
-	int faceIndex2 = int(BB2.x) + FaceOffset;
+	int faceIndex2 = int(BB2.x);
     	
-	if(MaskResult[bbindex1*64+bbindex2]!=1)	return;	
+	//(64*BBINDEX1)+index1+(64*BBINDEX2)+index2;
+	//BBINDEX1 : OBJECT1, BBINDEX2 : OBJECT2, index1 : BBindex1, index2 : BBindex2
+	if(MaskResult[(64*int(BB1.z))+bbindex1+(64*int(BB1.z))+bbindex2!=1)	return;	
 	
 	FacePairwise[faceIndex1*obj2facecount+faceIndex2].z = tri_tri_overlap_3D(Face_Information[faceIndex1].FaceNodeIndex.xyz,Face_Information[faceIndex2].FaceNodeIndex.xyz);   
 
