@@ -33,7 +33,7 @@ void init()
 	int ttt = 0;	
 	int max = 0;		
 		
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 7; i++)
 	{
 		obj = new CDeformable(1);
 		v_cnt = (*obj->curMSS)->GetNumParticles();
@@ -44,14 +44,14 @@ void init()
 
 		render->nodefacemaxSize = max;
 
-		printf("max is %d\n", render->nodefacemaxSize);
+		//printf("max is %d\n", render->nodefacemaxSize);
 
 		obj->SetBoundingBox(render->VerticesCount);
 		obj->setFaceList();
 		render->mDefList.push_back(obj);
 		ttt = obj->sum;
 		render->BBFaceCount += ttt;
-		printf("%d\n", render->BBFaceCount);
+		//printf("%d\n", render->BBFaceCount);
 		render->VerticesCount += v_cnt;
 		render->spring_count += obj->mSrpingSystem->mNumSprings;
 		render->ObjectCount++;

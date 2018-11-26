@@ -288,18 +288,7 @@ void CRender::invoke_compute_shader(){
 	{
 		glUniform1i(uniform_loc, ObjectCount);
 	}
-
-
-	uniform_loc = glGetUniformLocation(compute_program_handle[0], "extForce");
-	if (uniform_loc != unsigned int(-1))
-	{
-		if (currentCNT>400)
-			glUniform1f(uniform_loc, 1.0f);
-		else
-			glUniform1f(uniform_loc, 0.0f);
-	}
-
-
+	
 	workingGroups = VerticesCount / 512;
 	glDispatchCompute(workingGroups + 1, 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
@@ -510,7 +499,7 @@ void CRender::generateBuffers(){
 	};
 	glGenBuffers(1, &SSBONodeForceMap);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBONodeForceMap);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, VerticesCount * 30 * sizeof(vertex4f), NULL, GL_STATIC_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, VerticesCount * 31 * sizeof(vertex4f), NULL, GL_STATIC_DRAW);
 	resetNodeForceSummationSSBO();
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, SSBONodeForceMap);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -789,9 +778,9 @@ void CRender::resetBoundingBoxSSBO1(){
 void CRender::resetNodeForceSummationSSBO(){
 	//printf("start PARTICLE force \n");
 
-	struct vertex4f* VertexForece = (struct vertex4f*) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, VerticesCount * 30 * sizeof(vertex4f), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+	struct vertex4f* VertexForece = (struct vertex4f*) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, VerticesCount * 31 * sizeof(vertex4f), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
-	for (int i = 0; i < VerticesCount * 30; i++)
+	for (int i = 0; i < VerticesCount * 31; i++)
 	{
 		VertexForece[i].x = 0.0;
 		VertexForece[i].y = 0.0;

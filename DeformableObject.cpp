@@ -36,8 +36,8 @@ CDeformable::CDeformable(int number)
 		mTick = 0.001;		
 		CObjectFactory *of = new CObjectFactory();
 
-		float X_POS = rand() % 30 - 20.0;
-		float Y_POS = rand() % 20 + 5.0;
+		float X_POS = rand() % 15 - 5.0;
+		float Y_POS = rand() % 10 + 10.0;
 
 		mSrpingSystem = new CMassSpringSystem(INTEGRATION_METHOD::SEMI_EULER);
 		//mss	   ks  kd    mass      position	  model_name
