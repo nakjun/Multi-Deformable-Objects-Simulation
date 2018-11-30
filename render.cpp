@@ -149,8 +149,25 @@ void CRender::invoke_updateBB_shader(){
 void CRender::invoke_collisionBB_shader()
 {
 	// BB_program_handle[0] : BBCollision.cshader
+	// BB_program_handle[1] : BBUpdate.cshader
 	// BB_program_handle[2] : FaceFaceIntersection.cshader
 	
+	glUseProgram(BB_program_handle[1]);
+
+	uniform_loc = glGetUniformLocation(BB_program_handle[1], "FaceOffset");
+
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, fCountList.at(0));
+	}
+
+	workingGroups = BBCOUNT * ObjectCount / 32;
+
+	glDispatchCompute(workingGroups, 1, 1);
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
+
+
+
 	glUseProgram(BB_program_handle[0]);
 	
 	uniform_loc = glGetUniformLocation(BB_program_handle[0], "FaceOffset");
@@ -742,7 +759,7 @@ void CRender::resetBoundingBoxSSBO1(){
 	for (int i = 0; i < ObjectCount; i++){
 
 		//First : Level 1 AABB
-		temp = mDefList.at(i);		
+		temp = mDefList.at(i);	
 		
 		for (int j = 0; j < 8; j++)
 		{
@@ -761,9 +778,9 @@ void CRender::resetBoundingBoxSSBO1(){
 				ObjectBB[curr].max.index = 0.0;
 
 				ObjectBB[curr].data.x = (float)i;
-				ObjectBB[curr].data.y = 0.0;
-				ObjectBB[curr].data.z = l2->offset;
-				ObjectBB[curr].data.index = l2->facelist2->size();
+				ObjectBB[curr].data.y = l2->offset;
+				ObjectBB[curr].data.z = l2->facelist2->size();
+				ObjectBB[curr].data.index = (*temp->curMSS)->mFaceArray.size();
 
 				curr++;
 			}			
@@ -933,46 +950,6 @@ void CRender::resetFaceSSBO(){
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 	}
 
-
-	/*for (int n = 0; n < mDefList.size(); n++){
-		temp = mDefList.at(n);
-		mTemp = *temp->curMSS;
-
-		for (int i = offset; i < mTemp->mFaceArray.size(); i++)
-		{
-			faceBuff[i].faceindex.x = mTemp->mFaceArray.at(curr).x;
-			faceBuff[i].faceindex.y = mTemp->mFaceArray.at(curr).y;
-			faceBuff[i].faceindex.z = mTemp->mFaceArray.at(curr).z;
-			faceBuff[i].faceindex.index = (float)n;
-
-			faceBuff[i].nodefaceresponseindex.x = mTemp->mFaceArray2.at(curr).x;
-			faceBuff[i].nodefaceresponseindex.y = mTemp->mFaceArray2.at(curr).y;
-			faceBuff[i].nodefaceresponseindex.z = mTemp->mFaceArray2.at(curr).z;
-			faceBuff[i].nodefaceresponseindex.index = (float)n;
-
-			curr++;
-		}
-		offset += mTemp->mFaceArray.size();
-		curr = 0;
-	}*/
-
-	//for (int n = 0; n < fCountList.size(); n++)
-	//{
-	//	for (int i = offset; i < offset + fCountList.at(n); i++){
-	//		/*faceBuff[i].faceindex.x = (float)FACEARRAY.at((3*i));
-	//		faceBuff[i].faceindex.y = (float)FACEARRAY.at((3 * i) + 1);
-	//		faceBuff[i].faceindex.z = (float)FACEARRAY.at((3 * i) + 2);
-	//		faceBuff[i].faceindex.index = (float)n;
-
-	//		faceBuff[i].nodefaceresponseindex.x = (float)FACEARRAY2.at((3 * i));
-	//		faceBuff[i].nodefaceresponseindex.y = (float)FACEARRAY2.at((3 * i) + 1);
-	//		faceBuff[i].nodefaceresponseindex.z = (float)FACEARRAY2.at((3 * i) + 2);
-	//		faceBuff[i].nodefaceresponseindex.index = (float)n;*/
-	//	}
-	//	
-	//}
-	
-	//glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 	printf("face ssbo setup end\n");
 }
 

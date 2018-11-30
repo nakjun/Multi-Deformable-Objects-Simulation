@@ -87,7 +87,7 @@ void main() {
 	if(vPos.y<-1.0000)
 	{     
 		vec3 v = vVel.xyz;
-		v.y *= -0.85;
+		v.y *= -0.0001;
 		vVel.xyz = v;
 
 		vec3 p1 = vPos.xyz;

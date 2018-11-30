@@ -51,18 +51,19 @@ uniform int FaceOffset;
 layout (local_size_x = 32) in;
 
 void main() {
-	uint index= gl_GlobalInvocationID.x;	// 1차원으로 dispatch된 BB의 index를 가져옴
-	
-	BoundingBox curBB = BB_INFOR1[index];   // 해당 인덱스의 BoundingBox Information을 가져옴
-	
-	int nowfaceCount = int(curBB.data.w);	// 현재 바운딩박스의 Face갯수를 가져옴
-	
-	if(nowfaceCount==0) return;				// Face가 없는 바운딩 박스는 쓰레드를 종료함
+	uint index= gl_GlobalInvocationID.x;		// 1차원으로 dispatch된 BB의 index를 가져옴
 
-	int nowfaceOffset = 0;					// FaceOffset을 저장할 변수 초기화
-	int nowoffset = int(curBB.data.z);		// BoundingBox의 Offset을 저장할 변수 초기화
+	BoundingBox curBB = BB_INFOR1[index];		// 해당 인덱스의 BoundingBox Information을 가져옴
+	
+	int nowfaceCount = int(curBB.data.z);		// 현재 바운딩박스의 Face갯수를 가져옴
+	int nowOBJFaceOffset = int(curBB.data.w);	// 현재 바운딩박스가 속한 OBJECT의 Face Offset을 가져옴
+	
+	if(nowfaceCount==0) return;					// Face가 없는 바운딩 박스는 쓰레드를 종료함
 
-	if(curBB.data.x==1.0)					// 두번째 오브젝트일 경우 Offset을 저장함
+	int nowfaceOffset = 0;						// FaceOffset을 저장할 변수 초기화
+	int nowoffset = int(curBB.data.y);			// BoundingBox의 Offset을 저장할 변수 초기화
+		
+	if(curBB.data.x!=0.0)						// 첫번째 오브젝트가 아닐 경우 OFFSET을 적용하기 위해 동적으로 변화시킴
 	{
 		nowoffset += FaceListOffset;
 		nowfaceOffset += FaceOffset;
