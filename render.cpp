@@ -91,7 +91,7 @@ CRender::CRender()
 
 CRender::~CRender()
 {
-	printf("%d\n", fcnt);
+	//printf("%d\n", fcnt);
 	
 }
 void CRender::init(float width, float height)
@@ -730,7 +730,7 @@ void CRender::resetPositionSSBO(){
 	int Offset = 0;
 	struct vertex4f* VertexPos;
 	for (int n = 0; n < ObjectCount; n++){
-		printf("vCountList[%d]=%d\n", n, vCountList.at(n));
+		//printf("vCountList[%d]=%d\n", n, vCountList.at(n));
 		VertexPos = (struct vertex4f*) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, Offset, vCountList.at(n) * sizeof(vertex4f), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 		Offset += vCountList.at(n) * sizeof(vertex4f);
 
@@ -1154,7 +1154,7 @@ void CRender::check2()
 	for (int i = 0; i < VERTEXSIZE; i++){
 		array.push_back(*ptr++);
 	}
-	printf("array Size : %d\n", array.size());
+	//printf("array Size : %d\n", array.size());
 
 	for (int i = 0; i < VERTEXSIZE; i++){
 		//fprintf(fpbb, "%d번째 FaceList 결과 : %f / [BB : %f] %f %f\n", i, array[i].x, array[i].y, array[i].z, array[i].index);

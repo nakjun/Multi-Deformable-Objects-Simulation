@@ -1,3 +1,4 @@
+#pragma warning(disable:4996)
 #include "glsl.h"
 #include "render.h"
 #include "DeformableObject.h"
@@ -54,6 +55,33 @@ void init()
 		render->vCountList.push_back(v_cnt);
 		render->sCountList.push_back(obj->mSrpingSystem->mNumSprings);
 	}
+
+	printf("======MODEL LOAD COMPLETE======\n");
+
+	int work_grp_cnt[3];
+
+	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &work_grp_cnt[0]);
+	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &work_grp_cnt[1]);
+	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &work_grp_cnt[2]);
+
+	printf("max global (total) work group size x:%i y:%i z:%i\n",
+		work_grp_cnt[0], work_grp_cnt[1], work_grp_cnt[2]);
+
+	int work_grp_size[3];
+
+	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &work_grp_size[0]);
+	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &work_grp_size[1]);
+	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &work_grp_size[2]);
+
+	printf("max local (in one shader) work group sizes x:%i y:%i z:%i\n",
+		work_grp_size[0], work_grp_size[1], work_grp_size[2]);
+	
+	int work_grp_inv;
+	glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &work_grp_inv);
+	printf("max local work group invocations %i\n", work_grp_inv);
+		
+	//scanf("%d", &work_grp_size[0]);
+
 }
 
 static void error_callback(int error, const char* description)
@@ -95,7 +123,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		if (flag == true) flag = false;
 		else flag = true;
 	}
-	printf("x : %d y : %d z : %d\n", render->cam->x, render->cam->y, render->cam->z);
+	//printf("x : %d y : %d z : %d\n", render->cam->x, render->cam->y, render->cam->z);
 }
 
 static void framebuffer_size_callback(GLFWwindow* window, int width, int height)

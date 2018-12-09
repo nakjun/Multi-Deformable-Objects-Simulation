@@ -86,7 +86,7 @@ CDeformable::CDeformable(int number)
 
 	}
 
-	printf("max : %d", maxFaceListSize);
+	//printf("max : %d", maxFaceListSize);
 
 	Box = new CBox();
 	springinformationTable = (int **)malloc((*curMSS)->GetNumParticles()*sizeof(int));	
@@ -166,7 +166,7 @@ void CDeformable::setFaceList()
 	}
 	
 	fclose(fp);
-	printf("summary Face Count : %d\n", sum);
+	//printf("summary Face Count : %d\n", sum);
 
 	FILE *fpp = fopen("DeformableFaceList.txt", "w");
 	for (int i = 0; i < faceList->size(); i++)
