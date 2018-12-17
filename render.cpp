@@ -14,6 +14,7 @@ using namespace std;
 vec3 lightPos = vec3(0.0f, 15.0f, 1.0f);
 vec3 external_Force = vec3(9.8f, 0.0f, 0.0f);
 int faceCount2;
+int wholeFaceCount = 0;
 int currentCNT = 0;
 struct vertex4f {
 	GLfloat x, y, z;
@@ -166,8 +167,6 @@ void CRender::invoke_collisionBB_shader()
 	glDispatchCompute(workingGroups, 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
 
-
-
 	glUseProgram(BB_program_handle[0]);
 	
 	uniform_loc = glGetUniformLocation(BB_program_handle[0], "FaceOffset");
@@ -184,27 +183,16 @@ void CRender::invoke_collisionBB_shader()
 	
 	// Face-Face Intersection : N' * M' Invoke
 	glUseProgram(BB_program_handle[2]);
-	uniform_loc = glGetUniformLocation(BB_program_handle[2], "Offset");
+	
+	uniform_loc = glGetUniformLocation(BB_program_handle[2], "WHOLE_FACECOUNT");
 
 	if (uniform_loc != unsigned int(-1))
 	{
-		glUniform1i(uniform_loc, mDefList.at(0)->sum);
-	}
-	uniform_loc = glGetUniformLocation(BB_program_handle[2], "FaceOffset");
-
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, fCountList.at(0));
-	}
-	uniform_loc = glGetUniformLocation(BB_program_handle[2], "obj2facecount");
-
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, faceCount2);
+		glUniform1i(uniform_loc, wholeFaceCount);
 	}
 
-	int workingGroups = mDefList.at(0)->sum / 32;
-	int workingGroups2 = mDefList.at(1)->sum / 32;
+	int workingGroups = wholeFaceCount / 32;
+	int workingGroups2 = wholeFaceCount / 32;
 	glDispatchCompute(workingGroups + 1, workingGroups2 + 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
 }
@@ -1053,6 +1041,7 @@ void CRender::SetFaceList(){
 		}
 		vSize += vCountList.at(n);
 	}
+	wholeFaceCount = FaceCount;
 }
 void CRender::resetBoundingBoxResultSSBO(){
 	struct vertex4f* ObjectBB = (struct vertex4f*) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 64 * 64 * sizeof(vertex4f), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);

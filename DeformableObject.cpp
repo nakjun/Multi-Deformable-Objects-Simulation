@@ -36,8 +36,8 @@ CDeformable::CDeformable(int number)
 		mTick = 0.001;		
 		CObjectFactory *of = new CObjectFactory();
 
-		float X_POS = rand() % 30 - rand() % 30;
-		float Y_POS = rand() % 20 + rand() % 20;
+		float X_POS = rand() % 20 - rand() % 5;
+		float Y_POS = rand() % 20 + rand() % 70;
 
 		mSrpingSystem = new CMassSpringSystem(INTEGRATION_METHOD::SEMI_EULER);
 		//mss	   ks  kd    mass      position	  model_name
@@ -204,7 +204,6 @@ void CDeformable::SetBoundingBox(int offset){
 	}
 	Box->minZ = min; Box->maxZ = max;
 	
-
 	center = vec3((Box->maxX + Box->minX) / 2, (Box->maxY + Box->minY) / 2, (Box->maxZ + Box->minZ) / 2);
 	
 	Octree = new CTree(center, (Box->maxX - Box->minX) / 2, (Box->maxY - Box->minY) / 2, (Box->maxZ - Box->minZ) / 2);

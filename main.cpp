@@ -34,7 +34,7 @@ void init()
 	int obj_sum = 0;	
 	int max = 0;		
 		
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < 15; i++)
 	{
 		obj = new CDeformable(1);
 		v_cnt = (*obj->curMSS)->GetNumParticles();
@@ -48,7 +48,7 @@ void init()
 		obj->setFaceList();
 		render->mDefList.push_back(obj);
 		obj_sum = obj->sum;
-		render->BBFaceCount += obj_sum;
+		render->BBFaceCount += obj_sum;		
 		render->VerticesCount += v_cnt;
 		render->spring_count += obj->mSrpingSystem->mNumSprings;
 		render->ObjectCount++;
@@ -274,17 +274,21 @@ int main(void)
 	update = 0.0;
 	collision = 0.0;
 	summation = 0.0;
+	double currFPStime = glfwGetTime();
 	//Main Loop
 	do
 	{	
 		if (flag)
 		{
+			currFPStime = glfwGetTime();
 			render->invoke_compute_shader();
-			//render->invoke_updateBB_shader();
-			//render->invoke_collisionBB_shader();
-			//render->invoke_collisionHandling_shader();
+			render->invoke_updateBB_shader();
+			render->invoke_collisionBB_shader();
+			render->invoke_collisionHandling_shader();
 		}
 		render->render();		
+		lastFPStime = glfwGetTime();
+		printf("FPS : %.2f\n", 1/(lastFPStime - currFPStime)); 
 	} //Check if the ESC key had been pressed or if the window had been closed
 	
 	while (!glfwWindowShouldClose(window));		
