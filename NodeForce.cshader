@@ -34,12 +34,12 @@ void main() {
 	int next = int(OBJInformation.y);
 
 	vec3 Force = vec3(0.0);
-
+	
 	for(int i=0;i<NodeForceLength-1;i++)
 	{		
 		Force += Node_Force[index * NodeForceLength + i].xyz;
-	}
-		
+	}	
+	
 	Node_Force[index * NodeForceLength + NodeForceLength].xyz = Force;
 }
 

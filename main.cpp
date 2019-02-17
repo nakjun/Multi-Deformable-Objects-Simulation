@@ -34,9 +34,11 @@ void init()
 	int obj_sum = 0;	
 	int max = 0;		
 		
-	for (int i = 0; i < 15; i++)
-	{
-		obj = new CDeformable(1);
+	float height = rand() % 50;
+
+	for (int i = 0; i < 2; i++)
+	{		
+		obj = new CDeformable(1, height);
 		v_cnt = (*obj->curMSS)->GetNumParticles();
 		if (max < obj->maxFaceListSize)
 		{
@@ -54,8 +56,9 @@ void init()
 		render->ObjectCount++;
 		render->vCountList.push_back(v_cnt);
 		render->sCountList.push_back(obj->mSrpingSystem->mNumSprings);
+		height = height + 15.0;
 	}
-
+	printf("BBFACECOUNT : %d \n", render->BBFaceCount);
 	printf("======MODEL LOAD COMPLETE======\n");
 
 	int work_grp_cnt[3];
@@ -274,6 +277,7 @@ int main(void)
 	update = 0.0;
 	collision = 0.0;
 	summation = 0.0;
+	int framecountmain = 0;
 	double currFPStime = glfwGetTime();
 	//Main Loop
 	do
@@ -284,11 +288,12 @@ int main(void)
 			render->invoke_compute_shader();
 			render->invoke_updateBB_shader();
 			render->invoke_collisionBB_shader();
-			render->invoke_collisionHandling_shader();
+			//render->invoke_collisionHandling_shader();
 		}
 		render->render();		
-		lastFPStime = glfwGetTime();
-		printf("FPS : %.2f\n", 1/(lastFPStime - currFPStime)); 
+		lastFPStime = glfwGetTime();				
+		summation += 1 / (lastFPStime - currFPStime);
+		framecountmain++;
 	} //Check if the ESC key had been pressed or if the window had been closed
 	
 	while (!glfwWindowShouldClose(window));		
@@ -296,6 +301,6 @@ int main(void)
 	glfwDestroyWindow(window);
 	//Finalize and clean up GLFW
 	glfwTerminate();
-
+	printf("average FPS : %f", summation / framecountmain);
 	exit(EXIT_SUCCESS);
 }

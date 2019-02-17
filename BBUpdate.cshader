@@ -44,10 +44,6 @@ layout(std430, binding =9)  buffer BBFACE{
 	vec4 BBFaceList[];
 };
 
-uniform int ObjectCount;
-uniform int FaceListOffset;
-uniform int FaceOffset;
-
 layout (local_size_x = 32) in;
 
 void main() {
@@ -59,22 +55,15 @@ void main() {
 	int nowOBJFaceOffset = int(curBB.data.w);	// 현재 바운딩박스가 속한 OBJECT의 Face Offset을 가져옴
 	
 	if(nowfaceCount==0) return;					// Face가 없는 바운딩 박스는 쓰레드를 종료함
-
-	int nowfaceOffset = 0;						// FaceOffset을 저장할 변수 초기화
-	int nowoffset = int(curBB.data.y);			// BoundingBox의 Offset을 저장할 변수 초기화
 		
-	if(curBB.data.x!=0.0)						// 첫번째 오브젝트가 아닐 경우 OFFSET을 적용하기 위해 동적으로 변화시킴
-	{
-		nowoffset += FaceListOffset;
-		nowfaceOffset += FaceOffset;
-	}
-
+	int startIndex = int(curBB.data.y);			// BoundingBox의 Offset을 저장할 변수 초기화
+	int endIndex = int(curBB.data.z);			// BoundingBox의 Offset을 저장할 변수 초기화
+	
 	//Bounding Box의 Min, Max Vector를 update하기위한 Temp변수
 	vec4 min = vec4(0.0);
 	vec4 max = vec4(0.0);
 	
-	int FirstIndex = int(BBFaceList[nowoffset].x) + nowfaceOffset;
-	BB_INFOR1[index].data.y = float(FirstIndex);
+	int FirstIndex = int(BBFaceList[startIndex].x);	
 	vec4 FirstFaceNodeData = Face_Information[FirstIndex].FaceNodeIndex;
 
 	//첫번째 페이스정보를 통한 더미데이터 생성
@@ -83,9 +72,9 @@ void main() {
 	
 	//Offset ~ Offset+FaceCount 만큼 반복하며 Min, Max Vector를 계산함
 	int nodetempindex[3];
-	for(int i=nowoffset;i<nowoffset+nowfaceCount;i++)
+	for(int i=startIndex;i<startIndex+endIndex;i++)
 	{
-		int nIndex = int(BBFaceList[i].x) + nowfaceOffset;
+		int nIndex = int(BBFaceList[i].x);
 		vec4 FaceNodeData = Face_Information[nIndex].FaceNodeIndex;
 			
 		nodetempindex[0] = int(FaceNodeData.x);

@@ -120,28 +120,11 @@ void CRender::generateMVPMatrix()
 // CALL UPDATE BOUNDING BOX COMPUTE SHADER
 void CRender::invoke_updateBB_shader(){
 	
-	// BB_program_handle[1] : BBUpdate.cshader	
-	
+	// BB_program_handle[1] : BBUpdate.cshader		
 	glUseProgram(BB_program_handle[1]);
 
-	uniform_loc = glGetUniformLocation(BB_program_handle[1], "ObjectCount");
 	workingGroups = BBCOUNT * ObjectCount / 32;
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, BBCOUNT);
-	}
-	uniform_loc = glGetUniformLocation(BB_program_handle[1], "FaceListOffset");
-
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, mDefList.at(0)->sum);
-	}
-	uniform_loc = glGetUniformLocation(BB_program_handle[1], "FaceOffset");
-
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, fCountList.at(0));
-	}
+	
 	glDispatchCompute(workingGroups, 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
 }
@@ -149,36 +132,20 @@ void CRender::invoke_updateBB_shader(){
 // CALL BOUNDING BOX COLLISION and FACE-FACE INTERSECTION COMPUTE SHADER
 void CRender::invoke_collisionBB_shader()
 {
-	// BB_program_handle[0] : BBCollision.cshader
-	// BB_program_handle[1] : BBUpdate.cshader
+	// BB_program_handle[0] : BBCollision.cshader	
 	// BB_program_handle[2] : FaceFaceIntersection.cshader
 	
-	glUseProgram(BB_program_handle[1]);
+	glUseProgram(BB_program_handle[0]);	
+	
+	workingGroups = BBCOUNT * ObjectCount / 16;
 
-	uniform_loc = glGetUniformLocation(BB_program_handle[1], "FaceOffset");
-
+	uniform_loc = glGetUniformLocation(BB_program_handle[0], "wholeBBcount");
 	if (uniform_loc != unsigned int(-1))
 	{
-		glUniform1i(uniform_loc, fCountList.at(0));
+		glUniform1i(uniform_loc, BBCOUNT * ObjectCount);
 	}
 
-	workingGroups = BBCOUNT * ObjectCount / 32;
-
-	glDispatchCompute(workingGroups, 1, 1);
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
-
-	glUseProgram(BB_program_handle[0]);
-	
-	uniform_loc = glGetUniformLocation(BB_program_handle[0], "FaceOffset");
-
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, fCountList.at(0));
-	}
-	
-	workingGroups = BBCOUNT * ObjectCount / 32;
-
-	glDispatchCompute(workingGroups, workingGroups, 1);
+	glDispatchCompute(workingGroups, workingGroups, 1);	
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
 	
 	// Face-Face Intersection : N' * M' Invoke
@@ -191,7 +158,7 @@ void CRender::invoke_collisionBB_shader()
 		glUniform1i(uniform_loc, wholeFaceCount);
 	}
 
-	int workingGroups = wholeFaceCount / 32;
+	workingGroups = wholeFaceCount / 32;
 	int workingGroups2 = wholeFaceCount / 32;
 	glDispatchCompute(workingGroups + 1, workingGroups2 + 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
@@ -317,6 +284,8 @@ void CRender::render()
 
 	glfwSwapBuffers(Scenewindow);
 	fcnt++;
+
+	if (fcnt == 1) check3();
 
 	glfwPollEvents();
 }
@@ -744,11 +713,12 @@ void CRender::resetBoundingBoxSSBO1(){
 	int currentCount = 0;
 	CDeformable *temp;
 	int curr = 0;
+	int offset = 0;
+	int bboffset = 0;
+	int tempoffset = 0;
 	for (int i = 0; i < ObjectCount; i++){
-
 		//First : Level 1 AABB
-		temp = mDefList.at(i);	
-		
+		temp = mDefList.at(i);			
 		for (int j = 0; j < 8; j++)
 		{
 			Cnode *l1 = temp->Octree->root->children[j];
@@ -766,13 +736,17 @@ void CRender::resetBoundingBoxSSBO1(){
 				ObjectBB[curr].max.index = 0.0;
 
 				ObjectBB[curr].data.x = (float)i;
-				ObjectBB[curr].data.y = l2->offset;
-				ObjectBB[curr].data.z = l2->facelist2->size();
-				ObjectBB[curr].data.index = (*temp->curMSS)->mFaceArray.size();
+				ObjectBB[curr].data.y = (float)l2->offset + bboffset;
+				ObjectBB[curr].data.z = (float)l2->facelist2->size();
+				ObjectBB[curr].data.index = (float)offset;
+				printf("%d Object %d BB %f %f %f %f\n", i, j * 8 + n, ObjectBB[curr].data.x, ObjectBB[curr].data.y, ObjectBB[curr].data.z, ObjectBB[curr].data.index);
 
 				curr++;
 			}			
-		}
+		}		
+		bboffset += (temp->Octree->root->children[7]->children[7]->offset) + (temp->Octree->root->children[7]->children[7]->facelist2->size());
+		printf("%d\n", bboffset);
+		offset += (*temp->curMSS)->mFaceArray.size();
 	}
 
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -986,17 +960,19 @@ void CRender::resetFaceListSSBO()
 {		
 	struct vertex4f* faceListBuff = (struct vertex4f*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, BBFaceCount * sizeof(vertex4f), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);;
 	int offset = 0;
+	int curr = 0;
 	for (int i = 0; i < mDefList.size(); i++){
 		CDeformable *DeformTemp = mDefList.at(i);
-		
+		CMassSpringSystem *mTemp = (*DeformTemp->curMSS);
 		for (int j = 0; j < DeformTemp->faceList->size(); j++)
 		{
-			faceListBuff[offset + j].x = (float)DeformTemp->faceList->at(j).x;
-			faceListBuff[offset + j].y = (float)DeformTemp->faceList->at(j).y+(64*i);
-			faceListBuff[offset + j].z = (float)i;
-			faceListBuff[offset + j].index = -1.0;
-		}		
-		offset = offset + DeformTemp->faceList->size();
+			faceListBuff[curr].x = (float)DeformTemp->faceList->at(j).x+offset;			// BB Face list index
+			faceListBuff[curr].y = (float)DeformTemp->faceList->at(j).y + (64 * i);	// 오브젝트 번호별 오프셋 적용
+			faceListBuff[curr].z = (float)i;
+			faceListBuff[curr].index = -1.0;
+			curr++;
+		}
+		offset += mTemp->mFaceArray.size();
 	}
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
@@ -1086,35 +1062,35 @@ void CRender::setFacePair()
 
 void CRender::resetMaskSSBO()
 {
-	int* Mask = (int*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 64 * 64 * ObjectCount * ObjectCount * sizeof(int), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+	int* Mask = (int*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, BBCOUNT * BBCOUNT * ObjectCount * ObjectCount * sizeof(int), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
-	for (int i = 0; i < 64 * 64 * ObjectCount * ObjectCount ; i++){
+	for (int i = 0; i < BBCOUNT * BBCOUNT * ObjectCount * ObjectCount; i++){
 		Mask[i] = -1.0;		
 	}
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+	check3();
 }
 
 void CRender::check(){
 	
-	FILE *fpmm = fopen("newMinMax.txt", "w");
+	FILE *fpmm = fopen("BBFACELIST.txt", "w");
 	
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 15, SSBOBoundingBoxMin);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOBoundingBoxMin);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, SSBOFaceList);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOFaceList);
 
-	struct boundingBox *ptr;
-	ptr = (struct boundingBox*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+	struct vertex4f *ptr;
+	ptr = (struct vertex4f *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
 
-	vector<boundingBox> array;
+	vector<vertex4f> array;
 	
 	array.clear();
-	for (int i = 0; i < ObjectCount * BBCOUNT; i++){
+	for (int i = 0; i < BBFaceCount; i++){
 		array.push_back(*ptr++);
 	}
 
-	for (int i = 0; i < ObjectCount * BBCOUNT; i++){		
-		fprintf(fpmm, "%d [Object %d Min] %f %f %f %f\n", fcnt, i, array[i].min.x, array[i].min.y, array[i].min.z, array[i].min.index);
-		fprintf(fpmm, "%d [Object %d Max] %f %f %f %f\n", fcnt, i, array[i].max.x, array[i].max.y, array[i].max.z, array[i].max.index);
-		fprintf(fpmm, "%d [Object %d Index] %f %f %f %f\n\n", fcnt, i, array[i].data.x, array[i].data.y, array[i].data.z, array[i].data.index);
+	for (int i = 0; i < BBFaceCount; i++){
+		fprintf(fpmm, "[%d] %f %f %f %f\n", i, array[i].x, array[i].y, array[i].z, array[i].index);
 	}
 	fclose(fpmm);
 	
@@ -1155,7 +1131,7 @@ void CRender::check2()
 
 void CRender::check3()
 {
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 15, SSBOMaskBoundingBox);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, SSBOMaskBoundingBox);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOMaskBoundingBox);
 
 	int *ptr;
@@ -1165,11 +1141,11 @@ void CRender::check3()
 	FILE *fpbb = fopen("BBMASKRESULT.txt", "w");
 	vector<int> array;
 	array.clear();
-	for (int i = 0; i < 64*64; i++){
+	for (int i = 0; i < 64 * 64 * ObjectCount*ObjectCount; i++){
 		array.push_back(*ptr++);
 	}
 
-	for (int i = 0; i < 64*64; i++){		
+	for (int i = 0; i < 64 * 64 * ObjectCount*ObjectCount; i++){
 		fprintf(fpbb,"%d번째 Mask 결과 : %d\n", i,array[i]);		
 	}
 	fclose(fpbb);

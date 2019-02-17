@@ -28,7 +28,7 @@ CSpring *sp;
 float tmp;
 int currIndex = 0;
 
-CDeformable::CDeformable(int number)
+CDeformable::CDeformable(int number,int height)
 {	
 	ID = number;	
 
@@ -36,12 +36,11 @@ CDeformable::CDeformable(int number)
 		mTick = 0.001;		
 		CObjectFactory *of = new CObjectFactory();
 
-		float X_POS = rand() % 20 - rand() % 5;
-		float Y_POS = rand() % 20 + rand() % 70;
+		float X_POS = rand() % 50 - rand() % 50;		
 
 		mSrpingSystem = new CMassSpringSystem(INTEGRATION_METHOD::SEMI_EULER);
 		//mss	   ks  kd    mass      position	  model_name
-		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(X_POS, Y_POS, 0.0), torus);
+		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(X_POS, height, 0.0), torus);
 
 		mMSSList.push_back(mSrpingSystem);
 

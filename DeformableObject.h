@@ -7,7 +7,7 @@
 class CDeformable
 {
 public:
-	CDeformable(int number);
+	CDeformable(int number,int height);
 	~CDeformable();
 
 	//CPU »ç¿ë

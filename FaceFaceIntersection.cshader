@@ -592,7 +592,9 @@ void main() {
 	if(MaskResult[(64*int(BB1.z))+bbindex1+(64*int(BB1.z))+bbindex2]!=1)	return;	
 	
 	FacePairwise[faceIndex1*WHOLE_FACECOUNT+faceIndex2].z = tri_tri_overlap_3D(Face_Information[faceIndex1].FaceNodeIndex.xyz,Face_Information[faceIndex2].FaceNodeIndex.xyz);   
-
+	
+	//충돌 여부 node에 정리
+	/*
 	PrevPositions[int(Face_Information[faceIndex1].FaceNodeIndex.x)].w = 1.0;
     PrevPositions[int(Face_Information[faceIndex1].FaceNodeIndex.y)].w = 1.0;
     PrevPositions[int(Face_Information[faceIndex1].FaceNodeIndex.z)].w = 1.0;
@@ -600,5 +602,6 @@ void main() {
     PrevPositions[int(Face_Information[faceIndex2].FaceNodeIndex.x)].w = 1.0;
     PrevPositions[int(Face_Information[faceIndex2].FaceNodeIndex.y)].w = 1.0;
     PrevPositions[int(Face_Information[faceIndex2].FaceNodeIndex.z)].w = 1.0;
+	*/
 }
 
