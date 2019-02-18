@@ -566,6 +566,7 @@ int tri_tri_overlap_3D(vec3 tri1,vec3 tri2 )
 }
 
 uniform int WHOLE_FACECOUNT;
+uniform int wholeBBcount;
 
 vec3 color1 = vec3(1.0,1.0,0.9);
 vec3 color2 = vec3(1.0,1.0,1.0);
@@ -588,10 +589,11 @@ void main() {
 	int faceIndex2 = int(BB2.x);
     	
 	//(64*BBINDEX1)+index1+(64*BBINDEX2)+index2;
+	//index1*wholeBBcount+index2
 	//BBINDEX1 : OBJECT1, BBINDEX2 : OBJECT2, index1 : BBindex1, index2 : BBindex2
-	if(MaskResult[(64*int(BB1.z))+bbindex1+(64*int(BB1.z))+bbindex2]!=1)	return;	
+	if(MaskResult[bbindex1*wholeBBcount+bbindex2]!=1)	return;	
 	
-	FacePairwise[faceIndex1*WHOLE_FACECOUNT+faceIndex2].z = tri_tri_overlap_3D(Face_Information[faceIndex1].FaceNodeIndex.xyz,Face_Information[faceIndex2].FaceNodeIndex.xyz);   
+	//FacePairwise[faceIndex1*WHOLE_FACECOUNT+faceIndex2].z = tri_tri_overlap_3D(Face_Information[faceIndex1].FaceNodeIndex.xyz,Face_Information[faceIndex2].FaceNodeIndex.xyz);   
 	
 	//충돌 여부 node에 정리
 	/*

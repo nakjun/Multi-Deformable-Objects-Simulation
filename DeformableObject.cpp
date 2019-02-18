@@ -36,11 +36,12 @@ CDeformable::CDeformable(int number,int height)
 		mTick = 0.001;		
 		CObjectFactory *of = new CObjectFactory();
 
-		float X_POS = rand() % 50 - rand() % 50;		
-
+		float X_POS = rand() % 50 - rand() % 50;
+		float Z_POS = rand() % 10;
+		
 		mSrpingSystem = new CMassSpringSystem(INTEGRATION_METHOD::SEMI_EULER);
 		//mss	   ks  kd    mass      position	  model_name
-		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(X_POS, height, 0.0), torus);
+		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(X_POS, height, Z_POS), torus);
 
 		mMSSList.push_back(mSrpingSystem);
 
@@ -64,7 +65,7 @@ CDeformable::CDeformable(int number,int height)
 	}
 	
 	(*curMSS)->mFaceArray2.clear();
-
+	
 	ivec3 facearr;
 	ivec3 facearr2;
 	for (int i = 0; i < (*curMSS)->mFaceArray.size(); i++)
@@ -76,7 +77,7 @@ CDeformable::CDeformable(int number,int height)
 		facearr2.y = (*curMSS)->mParticleArray[facearr.y].facelist->size();
 		(*curMSS)->mParticleArray[facearr.z].facelist->push_back(ivec2(i, 0));
 		facearr2.z = (*curMSS)->mParticleArray[facearr.z].facelist->size();
-
+		
 		(*curMSS)->mFaceArray2.push_back(facearr2);
 		
 		if (maxFaceListSize < (*curMSS)->mParticleArray[facearr.x].facelist->size()) maxFaceListSize = (*curMSS)->mParticleArray[facearr.x].facelist->size();
@@ -84,8 +85,6 @@ CDeformable::CDeformable(int number,int height)
 		if (maxFaceListSize < (*curMSS)->mParticleArray[facearr.z].facelist->size()) maxFaceListSize = (*curMSS)->mParticleArray[facearr.z].facelist->size();
 
 	}
-
-	//printf("max : %d", maxFaceListSize);
 
 	Box = new CBox();
 	springinformationTable = (int **)malloc((*curMSS)->GetNumParticles()*sizeof(int));	

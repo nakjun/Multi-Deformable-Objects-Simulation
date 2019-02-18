@@ -158,6 +158,12 @@ void CRender::invoke_collisionBB_shader()
 		glUniform1i(uniform_loc, wholeFaceCount);
 	}
 
+	uniform_loc = glGetUniformLocation(BB_program_handle[2], "wholeBBcount");
+	if (uniform_loc != unsigned int(-1))
+	{
+		glUniform1i(uniform_loc, BBCOUNT * ObjectCount);
+	}
+
 	workingGroups = wholeFaceCount / 32;
 	int workingGroups2 = wholeFaceCount / 32;
 	glDispatchCompute(workingGroups + 1, workingGroups2 + 1, 1);
@@ -285,7 +291,11 @@ void CRender::render()
 	glfwSwapBuffers(Scenewindow);
 	fcnt++;
 
-	if (fcnt == 1) check3();
+	if (fcnt == 250)
+	{
+		check3();
+		check();
+	}
 
 	glfwPollEvents();
 }
@@ -751,7 +761,7 @@ void CRender::resetBoundingBoxSSBO1(){
 
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 	printf("curr %d\n", curr);
-	//check();
+	
 }
 
 void CRender::resetNodeForceSummationSSBO(){
@@ -892,15 +902,14 @@ void CRender::resetFaceSSBO(){
 
 	for (int n = 0; n < ObjectCount; n++){
 		faceBuff = (struct mface*) (struct mface*) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, Offset, fCountList.at(n) * sizeof(mface), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-		Offset += fCountList.at(n) * sizeof(mface);
-
+		
 		temp = mDefList.at(n);
 		mTemp = (*temp->curMSS);
 		for (int i = 0; i < fCountList.at(n); i++)
 		{
-			faceBuff[i].faceindex.x = mTemp->mFaceArray.at(i).x;
-			faceBuff[i].faceindex.y = mTemp->mFaceArray.at(i).y;
-			faceBuff[i].faceindex.z = mTemp->mFaceArray.at(i).z;
+			faceBuff[i].faceindex.x = mTemp->mFaceArray.at(i).x + Offset;
+			faceBuff[i].faceindex.y = mTemp->mFaceArray.at(i).y + Offset;
+			faceBuff[i].faceindex.z = mTemp->mFaceArray.at(i).z + Offset;
 			faceBuff[i].faceindex.index = (float)n;
 
 			faceBuff[i].nodefaceresponseindex.x = mTemp->mFaceArray2.at(i).x;
@@ -908,7 +917,7 @@ void CRender::resetFaceSSBO(){
 			faceBuff[i].nodefaceresponseindex.z = mTemp->mFaceArray2.at(i).z;
 			faceBuff[i].nodefaceresponseindex.index = (float)n;
 		}
-
+		Offset += fCountList.at(n) * sizeof(mface);
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 	}
 
@@ -1068,29 +1077,28 @@ void CRender::resetMaskSSBO()
 		Mask[i] = -1.0;		
 	}
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-
-	check3();
 }
 
 void CRender::check(){
 	
-	FILE *fpmm = fopen("BBFACELIST.txt", "w");
+	FILE *fpmm = fopen("BB_DATA_.txt", "w");
 	
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, SSBOFaceList);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOFaceList);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, SSBOBoundingBoxMin);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOBoundingBoxMin);
 
-	struct vertex4f *ptr;
-	ptr = (struct vertex4f *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+	struct boundingBox *ptr;
+	ptr = (struct boundingBox *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
 
-	vector<vertex4f> array;
+	vector<boundingBox> array;
 	
 	array.clear();
-	for (int i = 0; i < BBFaceCount; i++){
+	for (int i = 0; i < BBCOUNT * ObjectCount; i++){
 		array.push_back(*ptr++);
 	}
 
-	for (int i = 0; i < BBFaceCount; i++){
-		fprintf(fpmm, "[%d] %f %f %f %f\n", i, array[i].x, array[i].y, array[i].z, array[i].index);
+	for (int i = 0; i < BBCOUNT * ObjectCount; i++){
+		fprintf(fpmm, "[%d] Min : %f %f %f %f\n", i, array[i].min.x, array[i].min.y, array[i].min.z, array[i].min.index);
+		fprintf(fpmm, "[%d] Max : %f %f %f %f\n", i, array[i].max.x, array[i].max.y, array[i].max.z, array[i].max.index);		
 	}
 	fclose(fpmm);
 	
@@ -1099,29 +1107,22 @@ void CRender::check(){
 
 void CRender::check2()
 {
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 20, SSBOPos);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOPos);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, SSBOFaceList);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOFaceList);
 
 	struct vertex4f *ptr;
 	ptr = (struct vertex4f*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
 
-	FILE *fpbb = fopen("PositionTest.txt", "w");
+	FILE *fpbb = fopen("BBFACELIST_ATTACH.txt", "w");
 	vector<vertex4f> array;
 	array.clear();
 
-	int VERTEXSIZE = 0;
-
-	for (int i = 0; i < vCountList.size(); i++)
-	{
-		VERTEXSIZE += vCountList.at(i);
-	}
-
-	for (int i = 0; i < VERTEXSIZE; i++){
+	for (int i = 0; i < BBFaceCount; i++){
 		array.push_back(*ptr++);
 	}
 	//printf("array Size : %d\n", array.size());
 
-	for (int i = 0; i < VERTEXSIZE; i++){
+	for (int i = 0; i < BBFaceCount; i++){
 		//fprintf(fpbb, "%d번째 FaceList 결과 : %f / [BB : %f] %f %f\n", i, array[i].x, array[i].y, array[i].z, array[i].index);
 		fprintf(fpbb, "%d,%f,%f,%f,%f\n", i, array[i].x, array[i].y, array[i].z, array[i].index);
 	}

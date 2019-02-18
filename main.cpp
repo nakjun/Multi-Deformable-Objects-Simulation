@@ -284,19 +284,19 @@ int main(void)
 	{	
 		if (flag)
 		{
-			currFPStime = glfwGetTime();
-			render->invoke_compute_shader();
+			currFPStime = glfwGetTime();			
 			render->invoke_updateBB_shader();
 			render->invoke_collisionBB_shader();
+			render->invoke_compute_shader();
 			//render->invoke_collisionHandling_shader();
 		}
 		render->render();		
 		lastFPStime = glfwGetTime();				
 		summation += 1 / (lastFPStime - currFPStime);
 		framecountmain++;
-	} //Check if the ESC key had been pressed or if the window had been closed
-	
+	} //Check if the ESC key had been pressed or if the window had been closed	
 	while (!glfwWindowShouldClose(window));		
+	printf("%d", framecountmain);
 	//Close OpenGL window and terminate GLFW
 	glfwDestroyWindow(window);
 	//Finalize and clean up GLFW

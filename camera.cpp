@@ -17,7 +17,7 @@ Camera::Camera(void)
 	//test
 	x = 0.0;
 	y = 20.0;
-	z = 200;
+	z = 150;
 	
 	position =
 		::vec3(x, y, z);

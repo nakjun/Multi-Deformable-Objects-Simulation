@@ -48,10 +48,10 @@ layout(std430, binding = 9) buffer BB_Face {
     vec4 BBFaceList[]; 
 };
 
-float check(vec3 min1,vec3 min2,vec3 max1,vec3 max2){
-	if (max1.x < min2.x || min1.x > max2.x) return 0.0;
-	if (max1.y < min2.y || min1.y > max2.y) return 0.0;
-	if (max1.z < min2.z || min1.z > max2.z) return 0.0;
+float check(vec3 min1,vec3 min2,vec3 max1,vec3 max2){	
+	if (max1.x < min2.x || min1.x > max2.x) return -1.0;
+	if (max1.y < min2.y || min1.y > max2.y) return -2.0;
+	if (max1.z < min2.z || min1.z > max2.z) return -3.0;
 	return 1.0;
 }
 
@@ -68,7 +68,7 @@ void main()
 	//BB가 소속된 OBJECT의 INDEX를 가져옴
 	int BBINDEX1 = int(BB_INFOR[index1].data.x);
 	int BBINDEX2 = int(BB_INFOR[index2].data.x);
-
+	
 	MaskResult[index1*wholeBBcount + index2] = 0;
 
 	if(BBINDEX1==BBINDEX2)
@@ -82,4 +82,5 @@ void main()
 	
 	//MASKRESULT SSBO에 결과 값 저장
 	MaskResult[index1*wholeBBcount+index2] = int(res);
+	
 }
