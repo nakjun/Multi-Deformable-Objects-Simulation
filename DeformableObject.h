@@ -20,7 +20,7 @@ public:
 	void GetAABB();
 
 	//GPU »ç¿ë
-	void SetBoundingBox(int offset);
+	void SetBoundingBox( float X, float Y, float Z);
 	void setFaceList();
 public:
 	int ID;

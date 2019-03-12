@@ -119,22 +119,23 @@ void CRender::generateMVPMatrix()
 
 // CALL UPDATE BOUNDING BOX COMPUTE SHADER
 void CRender::invoke_updateBB_shader(){
-	
-	// BB_program_handle[1] : BBUpdate.cshader		
-	glUseProgram(BB_program_handle[1]);
-
-	workingGroups = BBCOUNT * ObjectCount / 32;
-	
-	glDispatchCompute(workingGroups, 1, 1);
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
+		
 }
 
 // CALL BOUNDING BOX COLLISION and FACE-FACE INTERSECTION COMPUTE SHADER
 void CRender::invoke_collisionBB_shader()
 {
 	// BB_program_handle[0] : BBCollision.cshader	
+	// BB_program_handle[1] : BBUpdate.cshader		
 	// BB_program_handle[2] : FaceFaceIntersection.cshader
-	
+		
+	glUseProgram(BB_program_handle[1]);
+
+	workingGroups = BBCOUNT * ObjectCount / 16;
+
+	glDispatchCompute(workingGroups, 1, 1);
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
+
 	glUseProgram(BB_program_handle[0]);	
 	
 	workingGroups = BBCOUNT * ObjectCount / 16;
@@ -173,29 +174,17 @@ void CRender::invoke_collisionBB_shader()
 void CRender::invoke_collisionHandling_shader()
 {	
 	// Calculate Reflecting Velocity : N' * M' Invoke
-	glUseProgram(CH_program_handle[1]);
-	uniform_loc = glGetUniformLocation(CH_program_handle[1], "Offset");
+	//glUseProgram(CH_program_handle[1]);
+	//uniform_loc = glGetUniformLocation(BB_program_handle[2], "WHOLE_FACECOUNT");
 
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, mDefList.at(0)->sum);
-	}
-	uniform_loc = glGetUniformLocation(CH_program_handle[1], "FaceOffset");
-
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, fCountList.at(0));
-	}
-	uniform_loc = glGetUniformLocation(CH_program_handle[1], "obj2facecount");
-
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, faceCount2);
-	}
-	int workingGroups = mDefList.at(0)->sum / 32;
-	int workingGroups2 = mDefList.at(1)->sum / 32;
-	glDispatchCompute(workingGroups + 1, workingGroups2 + 1, 1);
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
+	//if (uniform_loc != unsigned int(-1))
+	//{
+	//	glUniform1i(uniform_loc, wholeFaceCount);
+	//}
+	//workingGroups = wholeFaceCount / 32;
+	//int workingGroups2 = wholeFaceCount / 32;
+	//glDispatchCompute(workingGroups + 1, workingGroups2 + 1, 1);
+	//glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
 
 	// Back Positioning
 	glUseProgram(CH_program_handle[0]);
@@ -204,13 +193,7 @@ void CRender::invoke_collisionHandling_shader()
 	{
 		glUniform1i(uniform_loc, VerticesCount);
 	}
-
-	uniform_loc = glGetUniformLocation(CH_program_handle[0], "ObjectCount");
-	if (uniform_loc != unsigned int(-1))
-	{
-		glUniform1i(uniform_loc, ObjectCount);
-	}
-
+	
 	workingGroups = VerticesCount / 512;
 	glDispatchCompute(workingGroups + 1, 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Memory Barrier : Thread Merge
@@ -289,13 +272,19 @@ void CRender::render()
 	glDrawElements(GL_LINES, LINEARRAY.size() * 2, GL_UNSIGNED_INT, &LINEARRAY[0]);
 
 	glfwSwapBuffers(Scenewindow);
-	fcnt++;
-
-	if (fcnt == 250)
+	
+	if (fcnt == 0)
 	{
 		check3();
-		check();
+		check2("FFINTERSECTION.txt");
+		check("BB_DATA_8864.txt");
 	}
+	if (fcnt == 1000)
+	{
+		check("BB_DATA_1000.txt");
+	}
+	
+	fcnt++;
 
 	glfwPollEvents();
 }
@@ -749,19 +738,19 @@ void CRender::resetBoundingBoxSSBO1(){
 				ObjectBB[curr].data.y = (float)l2->offset + bboffset;
 				ObjectBB[curr].data.z = (float)l2->facelist2->size();
 				ObjectBB[curr].data.index = (float)offset;
-				printf("%d Object %d BB %f %f %f %f\n", i, j * 8 + n, ObjectBB[curr].data.x, ObjectBB[curr].data.y, ObjectBB[curr].data.z, ObjectBB[curr].data.index);
+				//printf("%d Object %d BB %f %f %f %f\n", i, j * 8 + n, ObjectBB[curr].data.x, ObjectBB[curr].data.y, ObjectBB[curr].data.z, ObjectBB[curr].data.index);
 
 				curr++;
 			}			
 		}		
 		bboffset += (temp->Octree->root->children[7]->children[7]->offset) + (temp->Octree->root->children[7]->children[7]->facelist2->size());
-		printf("%d\n", bboffset);
+		//printf("%d\n", bboffset);
 		offset += (*temp->curMSS)->mFaceArray.size();
 	}
 
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-	printf("curr %d\n", curr);
-	
+	//printf("curr %d\n", curr);
+	check("BB_DATA_0.txt");
 }
 
 void CRender::resetNodeForceSummationSSBO(){
@@ -897,6 +886,7 @@ void CRender::resetFaceSSBO(){
 	int curr = 0;
 	//int offset = 0;
 	int Offset = 0;
+	int offset2 = 0;
 	CDeformable *temp;
 	CMassSpringSystem *mTemp;
 
@@ -907,17 +897,18 @@ void CRender::resetFaceSSBO(){
 		mTemp = (*temp->curMSS);
 		for (int i = 0; i < fCountList.at(n); i++)
 		{
-			faceBuff[i].faceindex.x = mTemp->mFaceArray.at(i).x + Offset;
-			faceBuff[i].faceindex.y = mTemp->mFaceArray.at(i).y + Offset;
-			faceBuff[i].faceindex.z = mTemp->mFaceArray.at(i).z + Offset;
+			faceBuff[i].faceindex.x = mTemp->mFaceArray.at(i).x;
+			faceBuff[i].faceindex.y = mTemp->mFaceArray.at(i).y;
+			faceBuff[i].faceindex.z = mTemp->mFaceArray.at(i).z;
 			faceBuff[i].faceindex.index = (float)n;
-
+			
 			faceBuff[i].nodefaceresponseindex.x = mTemp->mFaceArray2.at(i).x;
 			faceBuff[i].nodefaceresponseindex.y = mTemp->mFaceArray2.at(i).y;
 			faceBuff[i].nodefaceresponseindex.z = mTemp->mFaceArray2.at(i).z;
 			faceBuff[i].nodefaceresponseindex.index = (float)n;
 		}
 		Offset += fCountList.at(n) * sizeof(mface);
+		offset2 += fCountList.at(n);
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 	}
 
@@ -985,7 +976,7 @@ void CRender::resetFaceListSSBO()
 	}
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
-	check2();
+	//check2("0frame.txt");
 }
 
 void CRender::SetFaceList(){
@@ -1079,9 +1070,9 @@ void CRender::resetMaskSSBO()
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 }
 
-void CRender::check(){
+void CRender::check(char* filename){
 	
-	FILE *fpmm = fopen("BB_DATA_.txt", "w");
+	FILE *fpmm = fopen(filename, "w");
 	
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, SSBOBoundingBoxMin);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOBoundingBoxMin);
@@ -1105,26 +1096,27 @@ void CRender::check(){
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 }
 
-void CRender::check2()
+void CRender::check2(char* filename)
 {
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, SSBOFaceList);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOFaceList);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, SSBOFacePairWise);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOFacePairWise);
 
 	struct vertex4f *ptr;
 	ptr = (struct vertex4f*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
 
-	FILE *fpbb = fopen("BBFACELIST_ATTACH.txt", "w");
+	//FILE *fpbb = fopen("BBFACELIST_ATTACH.txt", "w");
+	FILE *fpbb = fopen(filename, "w");
 	vector<vertex4f> array;
 	array.clear();
 
-	for (int i = 0; i < BBFaceCount; i++){
+	for (int i = 0; i < facePair->size(); i++){
 		array.push_back(*ptr++);
 	}
 	//printf("array Size : %d\n", array.size());
 
-	for (int i = 0; i < BBFaceCount; i++){
+	for (int i = 0; i < facePair->size(); i++){
 		//fprintf(fpbb, "%d번째 FaceList 결과 : %f / [BB : %f] %f %f\n", i, array[i].x, array[i].y, array[i].z, array[i].index);
-		fprintf(fpbb, "%d,%f,%f,%f,%f\n", i, array[i].x, array[i].y, array[i].z, array[i].index);
+		fprintf(fpbb, "%f\n", array[i].z);
 	}
 	fclose(fpbb);
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -1147,7 +1139,7 @@ void CRender::check3()
 	}
 
 	for (int i = 0; i < 64 * 64 * ObjectCount*ObjectCount; i++){
-		fprintf(fpbb,"%d번째 Mask 결과 : %d\n", i,array[i]);		
+		fprintf(fpbb,"번째 Mask 결과 : %d\n", array[i]);		
 	}
 	fclose(fpbb);
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);

@@ -48,8 +48,8 @@ public:
 	GLuint compileShader(std::string path_to_file, GLenum shader_type);
 	void printProgramLog(GLuint shader);
 	void printShaderLog(GLuint program);
-	void check();
-	void check2();
+	void check(char* filename);
+	void check2(char* filename);
 	void check3();
 	int BBIntersection(vec3 minA,vec3 maxA,vec3 minB,vec3 maxB);
 	void generateShaders();

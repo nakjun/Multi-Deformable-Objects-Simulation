@@ -36,7 +36,7 @@ void init()
 		
 	float height = rand() % 50;
 
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 20; i++)
 	{		
 		obj = new CDeformable(1, height);
 		v_cnt = (*obj->curMSS)->GetNumParticles();
@@ -46,11 +46,30 @@ void init()
 		}
 
 		render->nodefacemaxSize = max;
-		obj->SetBoundingBox(render->VerticesCount);
-		obj->setFaceList();
 		render->mDefList.push_back(obj);
 		obj_sum = obj->sum;
 		render->BBFaceCount += obj_sum;		
+		render->VerticesCount += v_cnt;
+		render->spring_count += obj->mSrpingSystem->mNumSprings;
+		render->ObjectCount++;
+		render->vCountList.push_back(v_cnt);
+		render->sCountList.push_back(obj->mSrpingSystem->mNumSprings);
+		height = height + 15.0;
+	}
+
+	for (int i = 0; i < 0; i++)
+	{
+		obj = new CDeformable(2, height);
+		v_cnt = (*obj->curMSS)->GetNumParticles();
+		if (max < obj->maxFaceListSize)
+		{
+			max = obj->maxFaceListSize;
+		}
+
+		render->nodefacemaxSize = max;
+		render->mDefList.push_back(obj);
+		obj_sum = obj->sum;
+		render->BBFaceCount += obj_sum;
 		render->VerticesCount += v_cnt;
 		render->spring_count += obj->mSrpingSystem->mNumSprings;
 		render->ObjectCount++;
@@ -284,11 +303,10 @@ int main(void)
 	{	
 		if (flag)
 		{
-			currFPStime = glfwGetTime();			
-			render->invoke_updateBB_shader();
+			currFPStime = glfwGetTime();						
 			render->invoke_collisionBB_shader();
 			render->invoke_compute_shader();
-			//render->invoke_collisionHandling_shader();
+			render->invoke_collisionHandling_shader();
 		}
 		render->render();		
 		lastFPStime = glfwGetTime();				

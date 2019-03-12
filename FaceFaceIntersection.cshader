@@ -587,23 +587,11 @@ void main() {
 
 	int faceIndex1 = int(BB1.x);
 	int faceIndex2 = int(BB2.x);
-    	
-	//(64*BBINDEX1)+index1+(64*BBINDEX2)+index2;
-	//index1*wholeBBcount+index2
-	//BBINDEX1 : OBJECT1, BBINDEX2 : OBJECT2, index1 : BBindex1, index2 : BBindex2
+    
+	//index1*wholeBBcount+index2 (index1 : bbindex1, index2 : bbindex2)
 	if(MaskResult[bbindex1*wholeBBcount+bbindex2]!=1)	return;	
 	
-	//FacePairwise[faceIndex1*WHOLE_FACECOUNT+faceIndex2].z = tri_tri_overlap_3D(Face_Information[faceIndex1].FaceNodeIndex.xyz,Face_Information[faceIndex2].FaceNodeIndex.xyz);   
-	
-	//충돌 여부 node에 정리
-	/*
-	PrevPositions[int(Face_Information[faceIndex1].FaceNodeIndex.x)].w = 1.0;
-    PrevPositions[int(Face_Information[faceIndex1].FaceNodeIndex.y)].w = 1.0;
-    PrevPositions[int(Face_Information[faceIndex1].FaceNodeIndex.z)].w = 1.0;
-      
-    PrevPositions[int(Face_Information[faceIndex2].FaceNodeIndex.x)].w = 1.0;
-    PrevPositions[int(Face_Information[faceIndex2].FaceNodeIndex.y)].w = 1.0;
-    PrevPositions[int(Face_Information[faceIndex2].FaceNodeIndex.z)].w = 1.0;
-	*/
+	int result = tri_tri_overlap_3D(Face_Information[faceIndex1].FaceNodeIndex.xyz,Face_Information[faceIndex2].FaceNodeIndex.xyz);
+	FacePairwise[faceIndex1*WHOLE_FACECOUNT+faceIndex2].z = result;
 }
 

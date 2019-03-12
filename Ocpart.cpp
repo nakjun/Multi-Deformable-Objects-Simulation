@@ -11,9 +11,9 @@ Cnode::Cnode(Cnode *par, int lv, vec3 Center, float width, float height, float d
 	parent = par;
 	level = lv;
 	center = Center;
-	mWidth = width;
-	mHeight = height;
-	mDepth = depth;
+	mWidth = width/2;
+	mHeight = height/2;
+	mDepth = depth/2;
 
 	render_code = false; // false => line & true => quad
 
@@ -43,7 +43,7 @@ Cnode::~Cnode()
 }
 void Cnode::createChildren()
 {
-	float nWidth = mWidth / 2; float nHeight = mHeight / 2; float nDepth = mDepth / 2;
+	float nWidth = mWidth; float nHeight = mHeight; float nDepth = mDepth;
 	children[0] = new Cnode(this, level + 1, vec3(center.x - nWidth, center.y + nHeight, center.z - nDepth), nWidth, nHeight, nDepth);
 	children[1] = new Cnode(this, level + 1, vec3(center.x + nWidth, center.y + nHeight, center.z - nDepth), nWidth, nHeight, nDepth);
 	children[2] = new Cnode(this, level + 1, vec3(center.x + nWidth, center.y + nHeight, center.z + nDepth), nWidth, nHeight, nDepth);

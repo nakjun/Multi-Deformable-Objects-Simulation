@@ -49,7 +49,8 @@ layout(std430, binding =11)  buffer Mask{
 	int MaskResult[];
 };
 
-layout (local_size_x = 32) in;
+uniform int wholeBBcount;
+layout (local_size_x = 16) in;
 
 void main() {
 	uint index= gl_GlobalInvocationID.x;		// 1차원으로 dispatch된 BB의 index를 가져옴
@@ -57,7 +58,7 @@ void main() {
 	BoundingBox curBB = BB_INFOR[index];		// 해당 인덱스의 BoundingBox Information을 가져옴
 	
 	int nowfaceCount = int(curBB.data.z);		// 현재 바운딩박스의 Face갯수를 가져옴
-	int nowOBJFaceOffset = int(curBB.data.w);	// 현재 바운딩박스가 속한 OBJECT의 Face Offset을 가져옴
+	int faceOFFSET = int(curBB.data.w);	// 현재 바운딩박스가 속한 OBJECT의 Face Offset을 가져옴
 	
 	if(nowfaceCount==0) return;					// Face가 없는 바운딩 박스는 쓰레드를 종료함
 		
@@ -70,19 +71,18 @@ void main() {
 	
 	int FirstIndex = int(BBFaceList[startIndex].x);	
 	vec4 FirstFaceNodeData = Face_Information[FirstIndex].FaceNodeIndex;
-
-	//MaskResult[index] = endIndex;
 	
 	//첫번째 페이스정보를 통한 더미데이터 생성
 	min.xyz = Positions[int(FirstFaceNodeData.x)].xyz;
 	max.xyz = Positions[int(FirstFaceNodeData.y)].xyz;
 	
 	//start index ~ start index + end index 만큼 반복하며 Min, Max Vector를 계산함
+	vec3 nodeinformation;
 	int nodetempindex[3];
 	for(int i=startIndex;i<startIndex+endIndex;i++)
 	{
 		int nIndex = int(BBFaceList[i].x);
-		vec4 FaceNodeData = Face_Information[nIndex].FaceNodeIndex;
+		vec3 FaceNodeData = Face_Information[nIndex+faceOFFSET].FaceNodeIndex.xyz;
 			
 		nodetempindex[0] = int(FaceNodeData.x);
 		nodetempindex[1] = int(FaceNodeData.y);

@@ -48,11 +48,10 @@ layout(std430, binding = 9) buffer BB_Face {
     vec4 BBFaceList[]; 
 };
 
-float check(vec3 min1,vec3 min2,vec3 max1,vec3 max2){	
-	if (max1.x < min2.x || min1.x > max2.x) return -1.0;
-	if (max1.y < min2.y || min1.y > max2.y) return -2.0;
-	if (max1.z < min2.z || min1.z > max2.z) return -3.0;
-	return 1.0;
+int check(vec3 min1,vec3 min2,vec3 max1,vec3 max2){		
+	if(max1.x > min2.x && min1.x < max2.x && max1.y > min2.y && min1.y < max2.y &&
+    max1.z > min2.z && min1.z < max2.z) return 1;
+	return 0;	
 }
 
 layout (local_size_x = 16, local_size_y = 16) in;
@@ -71,16 +70,14 @@ void main()
 	
 	MaskResult[index1*wholeBBcount + index2] = 0;
 
-	if(BBINDEX1==BBINDEX2)
-	{
-		MaskResult[index1*wholeBBcount + index2] = -200;
-		return;
-	}	
+	if(BBINDEX1==BBINDEX2)		return;
+	if(index1<index2) return;
 
 	//충돌 검사 수행 및 결과 저장
-	float res = check(BB_INFOR[index1].Min.xyz,BB_INFOR[index2].Min.xyz,BB_INFOR[index1].Max.xyz,BB_INFOR[index2].Max.xyz);		
+	int res = check(BB_INFOR[index1].Min.xyz,BB_INFOR[index2].Min.xyz,BB_INFOR[index1].Max.xyz,BB_INFOR[index2].Max.xyz);		
 	
 	//MASKRESULT SSBO에 결과 값 저장
-	MaskResult[index1*wholeBBcount+index2] = int(res);
+	MaskResult[index1*wholeBBcount+index2] = res;
 	
 }
+

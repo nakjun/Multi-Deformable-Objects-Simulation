@@ -35,7 +35,7 @@ void main() {
 	if(iscollision==0.0) return;
 	
 	//Reflect Vector Applying : ¹ְּû¿כ
-	Velocities[index].xyz *= -0.95;
+	Velocities[index].xyz *= -0.000001;
 
 	Positions[index].x = PrevPositions[index].x;
 	

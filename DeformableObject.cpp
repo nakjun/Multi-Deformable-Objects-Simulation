@@ -30,18 +30,21 @@ int currIndex = 0;
 
 CDeformable::CDeformable(int number,int height)
 {	
-	ID = number;	
+	ID = number;
+	float X_POS;
+	float Y_POS = height;
+	float Z_POS;
 
 	if (ID == 1){
 		mTick = 0.001;		
 		CObjectFactory *of = new CObjectFactory();
 
-		float X_POS = rand() % 50 - rand() % 50;
-		float Z_POS = rand() % 10;
+		X_POS = rand() % 40 + rand() % 5;
+		Z_POS = rand() % 10;
 		
 		mSrpingSystem = new CMassSpringSystem(INTEGRATION_METHOD::SEMI_EULER);
 		//mss	   ks  kd    mass      position	  model_name
-		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(X_POS, height, Z_POS), torus);
+		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(X_POS, Y_POS, Z_POS), torus);
 
 		mMSSList.push_back(mSrpingSystem);
 
@@ -50,12 +53,15 @@ CDeformable::CDeformable(int number,int height)
 		delete of;
 	}
 	else{
-		mTick = 0.0005;		
+		mTick = 0.001;
 		CObjectFactory *of = new CObjectFactory();
+
+		X_POS = rand() % 40 + rand() % 5;
+		Z_POS = rand() % 10;
 
 		mSrpingSystem = new CMassSpringSystem(INTEGRATION_METHOD::SEMI_EULER);
 		//mss	   ks  kd    mass      position	  model_name
-		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(-2.7, 15.0, 0), bunny);
+		of->TetrahedonLoad(mSrpingSystem, 0.0, 0.0, 1.0, vec3(X_POS, Y_POS, Z_POS), bunny);
 
 		mMSSList.push_back(mSrpingSystem);
 
@@ -104,7 +110,8 @@ CDeformable::CDeformable(int number,int height)
 		temp->forceindex2 = temp->mIndex2 * 30 + currIndex[temp->mIndex2];
 		currIndex[temp->mIndex2]++;			
 	}	
-	
+	SetBoundingBox(X_POS,Y_POS, Z_POS);
+	setFaceList();
 }
 CDeformable::~CDeformable()
 {
@@ -174,35 +181,32 @@ void CDeformable::setFaceList()
 	fclose(fpp);
 }
 
-void CDeformable::SetBoundingBox(int offset){
-	float min, max;
-	min = (*curMSS)->GetParticle(0)->mPos.x;
-	max = (*curMSS)->GetParticle(0)->mPos.x;
-	for (int i = 0; i < (*curMSS)->mNumParticles; i++){
-		if (min >(*curMSS)->GetParticle(i)->mPos.x) min = (*curMSS)->GetParticle(i)->mPos.x;
-		if (max < (*curMSS)->GetParticle(i)->mPos.x) max = (*curMSS)->GetParticle(i)->mPos.x;
-	}
-	Box->minX = min; Box->maxX = max;
-	
+void CDeformable::SetBoundingBox(float x, float y, float z){
+	float min[3], max[3];
+	min[0] = (*curMSS)->GetParticle(0)->mPos.x;
+	min[1] = (*curMSS)->GetParticle(0)->mPos.y;
+	min[2] = (*curMSS)->GetParticle(0)->mPos.z;
 
-	min = (*curMSS)->GetParticle(0)->mPos.y;
-	max = (*curMSS)->GetParticle(0)->mPos.y;
-	for (int i = 0; i < (*curMSS)->mNumParticles; i++){
-		if (min >(*curMSS)->GetParticle(i)->mPos.y) min = (*curMSS)->GetParticle(i)->mPos.y;
-		if (max < (*curMSS)->GetParticle(i)->mPos.y) max = (*curMSS)->GetParticle(i)->mPos.y;
-	}
-	Box->minY = min; Box->maxY = max;
-	
+	max[0] = (*curMSS)->GetParticle(0)->mPos.x;
+	max[1] = (*curMSS)->GetParticle(0)->mPos.x;
+	max[2] = (*curMSS)->GetParticle(0)->mPos.x;
 
-	min = (*curMSS)->GetParticle(0)->mPos.z;
-	max = (*curMSS)->GetParticle(0)->mPos.z;
 	for (int i = 0; i < (*curMSS)->mNumParticles; i++){
-		if (min >(*curMSS)->GetParticle(i)->mPos.z) min = (*curMSS)->GetParticle(i)->mPos.z;
-		if (max < (*curMSS)->GetParticle(i)->mPos.z) max = (*curMSS)->GetParticle(i)->mPos.z;
+		if (min[0] >= (*curMSS)->GetParticle(i)->mPos.x) min[0] = (*curMSS)->GetParticle(i)->mPos.x;
+		if (max[0] < (*curMSS)->GetParticle(i)->mPos.x) max[0] = (*curMSS)->GetParticle(i)->mPos.x;
+
+		if (min[1] >(*curMSS)->GetParticle(i)->mPos.y) min[1] = (*curMSS)->GetParticle(i)->mPos.y;
+		if (max[1] < (*curMSS)->GetParticle(i)->mPos.y) max[1] = (*curMSS)->GetParticle(i)->mPos.y;
+
+		if (min[2] >(*curMSS)->GetParticle(i)->mPos.z) min[2] = (*curMSS)->GetParticle(i)->mPos.z;
+		if (max[2] < (*curMSS)->GetParticle(i)->mPos.z) max[2] = (*curMSS)->GetParticle(i)->mPos.z;
 	}
-	Box->minZ = min; Box->maxZ = max;
+	Box->minX = min[0]; Box->maxX = max[0];
+	Box->minY = min[1]; Box->maxY = max[1];
+	Box->minZ = min[2]; Box->maxZ = max[2];
+		
+	center = vec3(Box->maxX - (Box->maxX + Box->minX) / 2, Box->maxY - (Box->maxY + Box->minY) / 2, Box->maxZ - (Box->maxZ + Box->minZ) / 2) + vec3(x,y,z);
+	printf("CENTER : %f %f %f\n", center.x,center.y,center.z);
 	
-	center = vec3((Box->maxX + Box->minX) / 2, (Box->maxY + Box->minY) / 2, (Box->maxZ + Box->minZ) / 2);
-	
-	Octree = new CTree(center, (Box->maxX - Box->minX) / 2, (Box->maxY - Box->minY) / 2, (Box->maxZ - Box->minZ) / 2);
+	Octree = new CTree(center, (Box->maxX - Box->minX), (Box->maxY - Box->minY), (Box->maxZ - Box->minZ));
 }
